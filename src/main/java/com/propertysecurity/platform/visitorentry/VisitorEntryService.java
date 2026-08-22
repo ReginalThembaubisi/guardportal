@@ -10,6 +10,9 @@ import com.propertysecurity.platform.invitation.Invitation;
 import com.propertysecurity.platform.invitation.InvitationRepository;
 import com.propertysecurity.platform.invitation.InvitationStatus;
 import com.propertysecurity.platform.property.PropertyRepository;
+import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
+import com.propertysecurity.platform.resident.Resident;
+import com.propertysecurity.platform.resident.ResidentRepository;
 import com.propertysecurity.platform.unit.PropertyUnit;
 import com.propertysecurity.platform.vehicle.Vehicle;
 import com.propertysecurity.platform.vehicle.VehicleService;
@@ -24,6 +27,7 @@ import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +38,8 @@ public class VisitorEntryService {
     private final InvitationRepository invitationRepository;
     private final GuardRepository guardRepository;
     private final PropertyRepository propertyRepository;
+    private final PropertyManagerRepository propertyManagerRepository;
+    private final ResidentRepository residentRepository;
     private final VehicleService vehicleService;
     private final AuditLogService auditLogService;
 
@@ -96,17 +102,38 @@ public class VisitorEntryService {
 
     /**
      * Every visitor_entry for a registration. Scoped to the caller's own
-     * property when they're a guard; unscoped (all properties) otherwise —
-     * currently that's only ADMIN, since SUPERVISOR/PROPERTY_MANAGER have no
-     * property association in the schema to scope by yet.
+     * property for a guard; scoped to every property they manage for a
+     * property manager (can be more than one — see PropertyManager); ADMIN
+     * (neither a guard nor a manager) is unscoped. SUPERVISOR still has no
+     * property association in the schema to scope by, so it stays excluded
+     * at the controller's @PreAuthorize level.
      */
     @Transactional(readOnly = true)
     public List<VisitorEntry> historyForRegistration(Long callerUserId, String registration) {
         String normalized = registration.trim().toUpperCase();
-        return guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId)
-                .map(guard -> visitorEntryRepository.findAllByVehicle_RegistrationAndProperty_IdOrderByEnteredAtDesc(
-                        normalized, guard.getProperty().getId()))
-                .orElseGet(() -> visitorEntryRepository.findAllByVehicle_RegistrationOrderByEnteredAtDesc(normalized));
+
+        Optional<Guard> guard = guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (guard.isPresent()) {
+            return visitorEntryRepository.findAllByVehicle_RegistrationAndProperty_IdOrderByEnteredAtDesc(
+                    normalized, guard.get().getProperty().getId());
+        }
+
+        List<Long> managedPropertyIds = propertyManagerRepository.findAllByUser_IdAndDeletedAtIsNull(callerUserId).stream()
+                .map(pm -> pm.getProperty().getId())
+                .toList();
+        if (!managedPropertyIds.isEmpty()) {
+            return visitorEntryRepository.findAllByVehicle_RegistrationAndProperty_IdInOrderByEnteredAtDesc(normalized, managedPropertyIds);
+        }
+
+        return visitorEntryRepository.findAllByVehicle_RegistrationOrderByEnteredAtDesc(normalized);
+    }
+
+    /** A resident's own visitor history — entries from invitations they personally created. */
+    @Transactional(readOnly = true)
+    public List<VisitorEntry> myHistory(Long residentUserId) {
+        Resident resident = residentRepository.findByUser_IdAndDeletedAtIsNull(residentUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("No resident profile found for this account"));
+        return visitorEntryRepository.findAllByInvitation_Resident_IdOrderByEnteredAtDesc(resident.getId());
     }
 
     public boolean isVehicleRecognized(VisitorEntry entry) {
@@ -116,10 +143,7 @@ public class VisitorEntryService {
     /**
      * Everyone currently on site at a property (exited_at IS NULL), grouped
      * by category — all four categories always present, possibly empty.
-     * Scoped the same way as vehicle history: a guard can only query their
-     * own property; unscoped otherwise (currently only ADMIN, since
-     * SUPERVISOR/PROPERTY_MANAGER have no property association in the
-     * schema to scope by yet — see historyForRegistration).
+     * Scoped the same way as vehicle history (see historyForRegistration).
      */
     @Transactional(readOnly = true)
     public Map<VisitorCategory, List<VisitorEntry>> occupancy(Long callerUserId, Long propertyId) {
@@ -127,11 +151,7 @@ public class VisitorEntryService {
             throw new ResourceNotFoundException("Property " + propertyId + " not found");
         }
 
-        guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId).ifPresent(guard -> {
-            if (!guard.getProperty().getId().equals(propertyId)) {
-                throw new AccessDeniedException("This property is not yours");
-            }
-        });
+        assertCanAccessProperty(callerUserId, propertyId);
 
         Map<VisitorCategory, List<VisitorEntry>> byCategory = new EnumMap<>(VisitorCategory.class);
         for (VisitorCategory category : VisitorCategory.values()) {
@@ -193,6 +213,25 @@ public class VisitorEntryService {
         }
         if (now.isAfter(invitation.getValidUntil())) {
             throw new BadRequestException("This invitation has expired (was valid until " + invitation.getValidUntil() + ")");
+        }
+    }
+
+    /**
+     * Guard -> must be their one property. Property manager -> must be one
+     * of the properties they manage. Neither (e.g. ADMIN) -> unrestricted.
+     */
+    private void assertCanAccessProperty(Long callerUserId, Long propertyId) {
+        Optional<Guard> guard = guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (guard.isPresent()) {
+            if (!guard.get().getProperty().getId().equals(propertyId)) {
+                throw new AccessDeniedException("This property is not yours");
+            }
+            return;
+        }
+
+        boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
+            throw new AccessDeniedException("This property is not yours");
         }
     }
 

@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/api/v1/visitor-entries")
 @RequiredArgsConstructor
@@ -45,19 +43,6 @@ public class VisitorEntryController {
         VisitorEntry entry = visitorEntryRepository.findByIdFetchVehicle(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Visitor entry " + id + " not found"));
         return VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry));
-    }
-
-    /**
-     * Every entry for a registration — "show me every time this car has
-     * been on the property." Scoped to the caller's own property for
-     * guards; unscoped for ADMIN (see VisitorEntryService.historyForRegistration).
-     */
-    @GetMapping("/by-vehicle/{registration}")
-    public List<VisitorEntryResponse> historyForVehicle(Authentication authentication, @PathVariable String registration) {
-        Long callerUserId = (Long) authentication.getPrincipal();
-        return visitorEntryService.historyForRegistration(callerUserId, registration).stream()
-                .map(entry -> VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry)))
-                .toList();
     }
 
     /** Guard-facing check-out: server-stamps exited_at on the entry. */

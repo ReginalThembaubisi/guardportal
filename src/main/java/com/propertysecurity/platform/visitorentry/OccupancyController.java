@@ -24,16 +24,16 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/properties")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('GUARD', 'ADMIN')")
+@PreAuthorize("hasAnyRole('GUARD', 'PROPERTY_MANAGER', 'ADMIN')")
 public class OccupancyController {
 
     private final VisitorEntryService visitorEntryService;
 
     /**
      * Everyone currently on site, grouped by category. Scoped to the
-     * caller's own property for guards; unscoped for ADMIN — see
-     * VisitorEntryService.occupancy for why SUPERVISOR/PROPERTY_MANAGER
-     * don't have access yet.
+     * caller's own property (guard) or managed properties (property
+     * manager); unscoped for ADMIN. SUPERVISOR still has no property
+     * association in the schema — see VisitorEntryService.assertCanAccessProperty.
      */
     @GetMapping("/{id}/occupancy")
     public OccupancyResponse occupancy(Authentication authentication, @PathVariable Long id) {
