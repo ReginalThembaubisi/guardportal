@@ -50,6 +50,12 @@ app:
     # base-url/{qrToken}. Override via CHECKIN_BASE_URL once that has a
     # real home.
     base-url: ${CHECKIN_BASE_URL:http://localhost:8080/checkin}
+  geo:
+    # Fallback radius (metres) for flagging an out-of-range shift clock-in/out,
+    # used when a property has no geo_tolerance_meters override set. Guards use
+    # personal phones with variable GPS accuracy, so this is deliberately loose —
+    # first-pass verification, not a hardened anti-fraud system.
+    default-tolerance-meters: ${GEO_DEFAULT_TOLERANCE_METERS:150}
 
 logging:
   level:

@@ -71,3 +71,7 @@ take it to a real client.
 
 Do not start Phase 5 work until Phase 1-4 have been used by a real pilot property. Feedback from
 actual guards and residents will change some of these before they're worth building.
+
+> **2026-08-22: guard clock-in/out was built ahead of pilot feedback, at the dev's explicit
+> request after being shown this note.** Everything below in this section is still un-piloted —
+> treat the shift table and endpoints as a first pass likely to change once real guards use it.

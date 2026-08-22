@@ -2,6 +2,7 @@ package com.propertysecurity.platform.property.dto;
 
 import com.propertysecurity.platform.property.Property;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PropertyResponse(
@@ -9,6 +10,9 @@ public record PropertyResponse(
         String name,
         String address,
         String timezone,
+        BigDecimal latitude,
+        BigDecimal longitude,
+        Integer geoToleranceMeters,
         LocalDateTime createdAt
 ) {
     public static PropertyResponse from(Property property) {
@@ -17,6 +21,9 @@ public record PropertyResponse(
                 property.getName(),
                 property.getAddress(),
                 property.getTimezone(),
+                property.getLatitude(),
+                property.getLongitude(),
+                property.getGeoToleranceMeters(),
                 property.getCreatedAt());
     }
 }

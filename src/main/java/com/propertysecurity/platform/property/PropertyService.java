@@ -23,6 +23,9 @@ public class PropertyService {
         if (request.timezone() != null && !request.timezone().isBlank()) {
             property.setTimezone(request.timezone());
         }
+        property.setLatitude(request.latitude());
+        property.setLongitude(request.longitude());
+        property.setGeoToleranceMeters(request.geoToleranceMeters());
         return propertyRepository.save(property);
     }
 
@@ -44,6 +47,9 @@ public class PropertyService {
         if (request.timezone() != null && !request.timezone().isBlank()) {
             property.setTimezone(request.timezone());
         }
+        property.setLatitude(request.latitude());
+        property.setLongitude(request.longitude());
+        property.setGeoToleranceMeters(request.geoToleranceMeters());
         return propertyRepository.save(property);
     }
 
