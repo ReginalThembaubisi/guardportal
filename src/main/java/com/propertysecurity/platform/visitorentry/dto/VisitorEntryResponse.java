@@ -16,12 +16,15 @@ public record VisitorEntryResponse(
         VisitorCategory category,
         ApprovalStatus approvalStatus,
         Long processedByGuardId,
+        String vehicleRegistration,
+        boolean vehicleRecognized,
         LocalDateTime enteredAt,
         LocalDateTime exitedAt,
         String notes,
         LocalDateTime createdAt
 ) {
-    public static VisitorEntryResponse from(VisitorEntry entry) {
+    /** vehicleRecognized must be computed by the caller (VehicleService.isRecognized) — not derivable from the entity alone. */
+    public static VisitorEntryResponse from(VisitorEntry entry, boolean vehicleRecognized) {
         return new VisitorEntryResponse(
                 entry.getId(),
                 entry.getProperty().getId(),
@@ -32,6 +35,8 @@ public record VisitorEntryResponse(
                 entry.getCategory(),
                 entry.getApprovalStatus(),
                 entry.getProcessedByGuard().getId(),
+                entry.getVehicle() != null ? entry.getVehicle().getRegistration() : null,
+                vehicleRecognized,
                 entry.getEnteredAt(),
                 entry.getExitedAt(),
                 entry.getNotes(),

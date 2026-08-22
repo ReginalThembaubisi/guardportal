@@ -4,6 +4,7 @@ import com.propertysecurity.platform.guard.Guard;
 import com.propertysecurity.platform.invitation.Invitation;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.unit.PropertyUnit;
+import com.propertysecurity.platform.vehicle.Vehicle;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -25,9 +26,6 @@ import java.time.LocalDateTime;
 /**
  * Not a BaseEntity: no deleted_at in the schema — this is the paper-register
  * replacement, an append-only log of who's on site, never soft-deleted.
- *
- * vehicle_id is intentionally not mapped yet — the vehicle table doesn't
- * exist until Phase 3 (see V3__add_invitation_and_visitor_entry.sql).
  */
 @Entity
 @Table(name = "visitor_entry")
@@ -51,6 +49,10 @@ public class VisitorEntry {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "invitation_id")
     private Invitation invitation;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "vehicle_id")
+    private Vehicle vehicle;
 
     @Column(name = "visitor_name", nullable = false, length = 150)
     private String visitorName;

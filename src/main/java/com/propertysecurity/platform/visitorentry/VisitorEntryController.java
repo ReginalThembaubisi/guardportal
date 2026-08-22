@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/visitor-entries")
 @RequiredArgsConstructor
@@ -34,14 +36,27 @@ public class VisitorEntryController {
     @ResponseStatus(HttpStatus.CREATED)
     public VisitorEntryResponse scan(Authentication authentication, @Valid @RequestBody ScanRequest request) {
         Long guardUserId = (Long) authentication.getPrincipal();
-        VisitorEntry entry = visitorEntryService.checkIn(guardUserId, request.qrToken());
-        return VisitorEntryResponse.from(entry);
+        VisitorEntryService.CheckInResult result = visitorEntryService.checkIn(guardUserId, request.qrToken(), request.vehicleRegistration());
+        return VisitorEntryResponse.from(result.entry(), result.vehicleRecognized());
     }
 
     @GetMapping("/{id}")
     public VisitorEntryResponse get(@PathVariable Long id) {
-        VisitorEntry entry = visitorEntryRepository.findById(id)
+        VisitorEntry entry = visitorEntryRepository.findByIdFetchVehicle(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Visitor entry " + id + " not found"));
-        return VisitorEntryResponse.from(entry);
+        return VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry));
+    }
+
+    /**
+     * Every entry for a registration — "show me every time this car has
+     * been on the property." Scoped to the caller's own property for
+     * guards; unscoped for ADMIN (see VisitorEntryService.historyForRegistration).
+     */
+    @GetMapping("/by-vehicle/{registration}")
+    public List<VisitorEntryResponse> historyForVehicle(Authentication authentication, @PathVariable String registration) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return visitorEntryService.historyForRegistration(callerUserId, registration).stream()
+                .map(entry -> VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry)))
+                .toList();
     }
 }
