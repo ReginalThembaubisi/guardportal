@@ -26,6 +26,16 @@ export default function Layout({ title, children }: { title: string; children: R
               </NavLink>
             </nav>
           )}
+          {hasRole("PROPERTY_MANAGER") && (
+            <nav className="top-nav">
+              <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                Dashboard
+              </NavLink>
+              <NavLink to="/residents/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                Add Resident
+              </NavLink>
+            </nav>
+          )}
           {auth && <span className="user-name">{auth.fullName}</span>}
           <button className="link-button" onClick={handleLogout}>
             Log out

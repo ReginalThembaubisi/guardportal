@@ -8,17 +8,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
+/**
+ * Write operations only — per docs/build_plan.md Phase 1, unit management
+ * is ADMIN-only. Reads are split into UnitReadController (see its own
+ * docstring for why a separate class rather than a method-level
+ * @PreAuthorize override) so a property manager can browse units on their
+ * own property without being able to create/edit/delete them.
+ */
 @RestController
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
@@ -30,16 +33,6 @@ public class PropertyUnitController {
     @ResponseStatus(HttpStatus.CREATED)
     public UnitResponse create(@PathVariable Long propertyId, @Valid @RequestBody UnitRequest request) {
         return UnitResponse.from(unitService.create(propertyId, request));
-    }
-
-    @GetMapping("/api/v1/properties/{propertyId}/units")
-    public List<UnitResponse> listByProperty(@PathVariable Long propertyId) {
-        return unitService.listByProperty(propertyId).stream().map(UnitResponse::from).toList();
-    }
-
-    @GetMapping("/api/v1/units/{id}")
-    public UnitResponse get(@PathVariable Long id) {
-        return UnitResponse.from(unitService.get(id));
     }
 
     @PutMapping("/api/v1/units/{id}")

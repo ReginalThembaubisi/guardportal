@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,8 +29,9 @@ public class ResidentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResidentResponse create(@Valid @RequestBody ResidentRequest request) {
-        return ResidentResponse.from(residentService.create(request));
+    public ResidentResponse create(Authentication authentication, @Valid @RequestBody ResidentRequest request) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return ResidentResponse.from(residentService.create(callerUserId, request));
     }
 
     @GetMapping

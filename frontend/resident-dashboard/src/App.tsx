@@ -3,6 +3,7 @@ import LoginPage from "./pages/LoginPage";
 import ResidentHistoryPage from "./pages/ResidentHistoryPage";
 import CreateInvitationPage from "./pages/CreateInvitationPage";
 import OccupancyDashboardPage from "./pages/OccupancyDashboardPage";
+import CreateResidentPage from "./pages/CreateResidentPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -30,6 +31,14 @@ export default function App() {
         element={
           <ProtectedRoute role="PROPERTY_MANAGER">
             <OccupancyDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/residents/new"
+        element={
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <CreateResidentPage />
           </ProtectedRoute>
         }
       />

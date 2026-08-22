@@ -66,6 +66,24 @@ export interface PropertyManagerResponse {
   propertyName: string;
 }
 
+export interface UnitResponse {
+  id: number;
+  propertyId: number;
+  unitNumber: string;
+  createdAt: string;
+}
+
+export interface ResidentResponse {
+  id: number;
+  userId: number;
+  fullName: string;
+  phoneNumber: string;
+  email: string | null;
+  unitId: number;
+  unitNumber: string;
+  createdAt: string;
+}
+
 export interface ApiErrorBody {
   status: number;
   error: string;
