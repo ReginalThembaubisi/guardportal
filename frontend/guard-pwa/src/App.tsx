@@ -6,6 +6,7 @@ import ClockPage from "./pages/ClockPage";
 import LoginPage from "./pages/LoginPage";
 import OccupancyPage from "./pages/OccupancyPage";
 import WalkInPage from "./pages/WalkInPage";
+import VehicleHistoryPage from "./pages/VehicleHistoryPage";
 
 export default function App() {
   return (
@@ -48,6 +49,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <OccupancyPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicle-history"
+        element={
+          <ProtectedRoute>
+            <VehicleHistoryPage />
           </ProtectedRoute>
         }
       />

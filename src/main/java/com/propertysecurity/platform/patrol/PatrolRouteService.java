@@ -7,7 +7,9 @@ import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.patrol.dto.PatrolRouteRequest;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.property.PropertyRepository;
+import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,13 +29,20 @@ public class PatrolRouteService {
     private final PatrolRouteCheckpointRepository patrolRouteCheckpointRepository;
     private final CheckpointRepository checkpointRepository;
     private final PropertyRepository propertyRepository;
+    private final PropertyManagerRepository propertyManagerRepository;
 
     public record Created(PatrolRoute route, List<PatrolRouteCheckpoint> stops) {
     }
 
-    public Created create(PatrolRouteRequest request) {
+    /**
+     * callerUserId is who's making the request. Previously accepted any
+     * propertyId with no check the caller manages it — same
+     * assertCanAccessProperty idiom as CheckpointService/ResidentService.
+     */
+    public Created create(Long callerUserId, PatrolRouteRequest request) {
         Property property = propertyRepository.findByIdAndDeletedAtIsNull(request.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Property " + request.propertyId() + " not found"));
+        assertCanAccessProperty(callerUserId, request.propertyId());
 
         Set<Long> distinctIds = new HashSet<>(request.checkpointIds());
         if (distinctIds.size() != request.checkpointIds().size()) {
@@ -82,5 +91,23 @@ public class PatrolRouteService {
     @Transactional(readOnly = true)
     public List<PatrolRouteCheckpoint> stopsFor(Long routeId) {
         return patrolRouteCheckpointRepository.findAllByRouteIdOrderBySequence(routeId);
+    }
+
+    /** Scoped read — needed to pick a route when checking missed-checkpoint status. */
+    @Transactional(readOnly = true)
+    public List<PatrolRoute> listByPropertyForCaller(Long callerUserId, Long propertyId) {
+        if (propertyRepository.findByIdAndDeletedAtIsNull(propertyId).isEmpty()) {
+            throw new ResourceNotFoundException("Property " + propertyId + " not found");
+        }
+        assertCanAccessProperty(callerUserId, propertyId);
+        return patrolRouteRepository.findAllByProperty_IdAndDeletedAtIsNull(propertyId);
+    }
+
+    /** Same idiom as PropertyUnitService.assertCanAccessProperty. */
+    private void assertCanAccessProperty(Long callerUserId, Long propertyId) {
+        boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
+            throw new AccessDeniedException("This property is not yours");
+        }
     }
 }

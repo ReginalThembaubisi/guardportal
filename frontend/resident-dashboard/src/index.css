@@ -178,7 +178,7 @@ form button[type="submit"]:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 .layout-header-right {
@@ -194,7 +194,11 @@ form button[type="submit"]:disabled {
 
 .top-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .nav-link {
@@ -389,4 +393,52 @@ form button[type="submit"]:disabled {
 .property-select {
   max-width: 280px;
   margin-bottom: 20px;
+}
+
+.badge.missed {
+  background: rgba(194, 54, 54, 0.1);
+  color: var(--danger);
+}
+
+/* Patrol route builder */
+.route-builder {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.route-builder-column {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.route-checkpoint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-checkpoint-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.route-checkpoint-list li:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.route-checkpoint-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
 }

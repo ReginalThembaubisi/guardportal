@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,8 +29,9 @@ public class GuardController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public GuardResponse create(@Valid @RequestBody GuardRequest request) {
-        return GuardResponse.from(guardService.create(request));
+    public GuardResponse create(Authentication authentication, @Valid @RequestBody GuardRequest request) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return GuardResponse.from(guardService.create(callerUserId, request));
     }
 
     @GetMapping

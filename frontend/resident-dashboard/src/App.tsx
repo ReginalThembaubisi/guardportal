@@ -4,6 +4,11 @@ import ResidentHistoryPage from "./pages/ResidentHistoryPage";
 import CreateInvitationPage from "./pages/CreateInvitationPage";
 import OccupancyDashboardPage from "./pages/OccupancyDashboardPage";
 import CreateResidentPage from "./pages/CreateResidentPage";
+import CreateCheckpointPage from "./pages/CreateCheckpointPage";
+import CreatePatrolRoutePage from "./pages/CreatePatrolRoutePage";
+import PatrolStatusPage from "./pages/PatrolStatusPage";
+import CreateGuardPage from "./pages/CreateGuardPage";
+import VehicleHistoryPage from "./pages/VehicleHistoryPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -39,6 +44,46 @@ export default function App() {
         element={
           <ProtectedRoute role="PROPERTY_MANAGER">
             <CreateResidentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkpoints/new"
+        element={
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <CreateCheckpointPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patrol-routes/new"
+        element={
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <CreatePatrolRoutePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patrol-status"
+        element={
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <PatrolStatusPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/guards/new"
+        element={
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <CreateGuardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicle-history"
+        element={
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <VehicleHistoryPage />
           </ProtectedRoute>
         }
       />

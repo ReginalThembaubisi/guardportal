@@ -5,10 +5,12 @@ import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.guard.dto.GuardRequest;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.property.PropertyRepository;
+import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
 import com.propertysecurity.platform.user.AppUser;
 import com.propertysecurity.platform.user.AppUserRepository;
 import com.propertysecurity.platform.user.Role;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,12 +26,24 @@ public class GuardService {
 
     private final GuardRepository guardRepository;
     private final PropertyRepository propertyRepository;
+    private final PropertyManagerRepository propertyManagerRepository;
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public Guard create(GuardRequest request) {
+    /**
+     * callerUserId is who's making the request. Previously accepted any
+     * propertyId with no check the caller manages it — same
+     * assertCanAccessProperty idiom as ResidentService/CheckpointService.
+     */
+    public Guard create(Long callerUserId, GuardRequest request) {
         Property property = propertyRepository.findByIdAndDeletedAtIsNull(request.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Property " + request.propertyId() + " not found"));
+
+        boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(
+                callerUserId, request.propertyId())) {
+            throw new AccessDeniedException("This property is not yours");
+        }
 
         if (appUserRepository.existsByPhoneNumberAndDeletedAtIsNull(request.phoneNumber())) {
             throw new ConflictException("A user with phone number " + request.phoneNumber() + " already exists");

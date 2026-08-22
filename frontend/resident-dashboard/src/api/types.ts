@@ -84,6 +84,62 @@ export interface ResidentResponse {
   createdAt: string;
 }
 
+export interface CheckpointResponse {
+  id: number;
+  propertyId: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  geoToleranceMeters: number | null;
+  qrToken: string;
+  qrCodeDataUri: string | null;
+  createdAt: string;
+}
+
+export interface PatrolRouteCheckpointStop {
+  checkpointId: number;
+  name: string;
+  sequenceOrder: number;
+}
+
+export interface PatrolRouteResponse {
+  id: number;
+  propertyId: number;
+  name: string;
+  checkpoints: PatrolRouteCheckpointStop[];
+  createdAt: string;
+}
+
+export interface MissedCheckpointStatus {
+  checkpointId: number;
+  name: string;
+  sequenceOrder: number;
+  scanned: boolean;
+  scanCount: number;
+  firstScanAt: string | null;
+  lastScanAt: string | null;
+}
+
+export interface MissedCheckpointResponse {
+  routeId: number;
+  routeName: string;
+  from: string;
+  to: string;
+  checkpoints: MissedCheckpointStatus[];
+}
+
+export interface GuardResponse {
+  id: number;
+  userId: number;
+  fullName: string;
+  phoneNumber: string;
+  email: string;
+  propertyId: number;
+  propertyName: string;
+  badgeNumber: string | null;
+  createdAt: string;
+}
+
 export interface ApiErrorBody {
   status: number;
   error: string;

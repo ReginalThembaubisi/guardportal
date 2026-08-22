@@ -32,6 +32,12 @@ phase** even if it seems easy to add.
    Never trust a client-supplied timestamp for anything audit-relevant.
 5. **Schema starting point** is `docs/property_security_schema.sql` — extend it, don't redesign
    it, unless a phase genuinely requires a structural change (flag it and explain why first).
+6. **Every task must state whether it needs a user-facing screen or is backend-only.** If a
+   feature needs to be usable by a real person (resident, guard, property manager, admin), the
+   task must explicitly build both the backend and the screen for it — don't leave a feature
+   backend-only unless that's stated as intentional. Before marking any phase complete, check
+   whether every backend feature built in that phase has a way for its intended user to actually
+   reach it through a UI.
 
 ## Conventions
 - REST endpoints: `/api/v1/{resource}`, plural nouns, standard verbs.
