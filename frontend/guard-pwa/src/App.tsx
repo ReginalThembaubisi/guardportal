@@ -1,15 +1,30 @@
-/**
- * Basic structure only — per the dev's Phase 4 scope, the guard-facing
- * scan/check-in/check-out/occupancy screens aren't built yet. This app
- * scaffold exists so the guard PWA has a place to grow into, separate from
- * frontend/resident-dashboard (different users, different offline needs —
- * see CLAUDE.md).
- */
+import { Navigate, Route, Routes } from "react-router-dom";
+import ProtectedRoute from "./components/ProtectedRoute";
+import CheckInPage from "./pages/CheckInPage";
+import LoginPage from "./pages/LoginPage";
+import OccupancyPage from "./pages/OccupancyPage";
+
 export default function App() {
   return (
-    <main className="placeholder">
-      <h1>Guard App</h1>
-      <p>Not built yet. This is a scaffold — see docs/build_plan.md for what's next.</p>
-    </main>
+    <Routes>
+      <Route path="/" element={<LoginPage />} />
+      <Route
+        path="/checkin"
+        element={
+          <ProtectedRoute>
+            <CheckInPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/occupancy"
+        element={
+          <ProtectedRoute>
+            <OccupancyPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
