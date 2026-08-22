@@ -3,6 +3,7 @@ import { apiFetch, ApiError } from "../api/client";
 import type { CheckpointScanResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import QrScanner from "../components/QrScanner";
 import ToleranceBadge from "../components/ToleranceBadge";
 import { getCurrentCoordinates } from "../geo";
 
@@ -13,9 +14,8 @@ export default function CheckpointScanPage() {
   const [lastScan, setLastScan] = useState<CheckpointScanResponse | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!auth) return;
+  async function submitScan(token: string) {
+    if (!auth || busy) return;
     setError(null);
     setBusy(true);
     try {
@@ -23,7 +23,7 @@ export default function CheckpointScanPage() {
       const scan = await apiFetch<CheckpointScanResponse>("/api/v1/checkpoint-scans", {
         method: "POST",
         token: auth.token,
-        body: { qrToken: qrToken.trim(), latitude: coords.latitude, longitude: coords.longitude },
+        body: { qrToken: token.trim(), latitude: coords.latitude, longitude: coords.longitude },
       });
       setLastScan(scan);
       setQrToken("");
@@ -34,6 +34,11 @@ export default function CheckpointScanPage() {
     }
   }
 
+  function handleManualSubmit(e: FormEvent) {
+    e.preventDefault();
+    submitScan(qrToken);
+  }
+
   return (
     <Layout title="Scan Checkpoint">
       {!auth?.openShift && (
@@ -41,15 +46,18 @@ export default function CheckpointScanPage() {
       )}
       {error && <p className="error">{error}</p>}
 
-      <form onSubmit={submit}>
+      <QrScanner onDecode={submitScan} />
+
+      <p className="scanner-divider">or enter the code manually</p>
+
+      <form onSubmit={handleManualSubmit}>
         <label>
           Checkpoint code
           <input
             type="text"
             value={qrToken}
             onChange={(e) => setQrToken(e.target.value)}
-            placeholder="Paste or type the checkpoint's code"
-            autoFocus
+            placeholder="Type the checkpoint's code"
             required
           />
         </label>

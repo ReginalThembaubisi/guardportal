@@ -3,6 +3,7 @@ import { apiFetch, ApiError } from "../api/client";
 import type { VisitorEntryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import QrScanner from "../components/QrScanner";
 
 export default function CheckInPage() {
   const { auth, setPropertyId } = useAuth();
@@ -12,9 +13,8 @@ export default function CheckInPage() {
   const [lastCheckIn, setLastCheckIn] = useState<VisitorEntryResponse | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!auth) return;
+  async function submitCheckIn(token: string) {
+    if (!auth || busy) return;
     setError(null);
     setBusy(true);
     try {
@@ -22,14 +22,13 @@ export default function CheckInPage() {
         method: "POST",
         token: auth.token,
         body: {
-          qrToken: qrToken.trim(),
+          qrToken: token.trim(),
           vehicleRegistration: vehicleRegistration.trim() || undefined,
         },
       });
       setLastCheckIn(entry);
       setPropertyId(entry.propertyId);
       setQrToken("");
-      setVehicleRegistration("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Check-in failed");
     } finally {
@@ -37,29 +36,38 @@ export default function CheckInPage() {
     }
   }
 
+  function handleManualSubmit(e: FormEvent) {
+    e.preventDefault();
+    submitCheckIn(qrToken);
+  }
+
   return (
     <Layout title="Check In">
       {error && <p className="error">{error}</p>}
 
-      <form onSubmit={submit}>
+      <label>
+        Vehicle registration (optional)
+        <input
+          type="text"
+          value={vehicleRegistration}
+          onChange={(e) => setVehicleRegistration(e.target.value.toUpperCase())}
+          placeholder="e.g. CA123456 — fill in before scanning if there's a vehicle"
+        />
+      </label>
+
+      <QrScanner onDecode={submitCheckIn} />
+
+      <p className="scanner-divider">or enter the code manually</p>
+
+      <form onSubmit={handleManualSubmit}>
         <label>
           Check-in code
           <input
             type="text"
             value={qrToken}
             onChange={(e) => setQrToken(e.target.value)}
-            placeholder="Paste or type the visitor's code"
-            autoFocus
+            placeholder="Type the visitor's code"
             required
-          />
-        </label>
-        <label>
-          Vehicle registration (optional)
-          <input
-            type="text"
-            value={vehicleRegistration}
-            onChange={(e) => setVehicleRegistration(e.target.value.toUpperCase())}
-            placeholder="e.g. CA123456"
           />
         </label>
         <button type="submit" disabled={busy}>
