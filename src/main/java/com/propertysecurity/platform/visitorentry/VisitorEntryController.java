@@ -59,4 +59,12 @@ public class VisitorEntryController {
                 .map(entry -> VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry)))
                 .toList();
     }
+
+    /** Guard-facing check-out: server-stamps exited_at on the entry. */
+    @PostMapping("/{id}/exit")
+    public VisitorEntryResponse exit(Authentication authentication, @PathVariable Long id) {
+        Long guardUserId = (Long) authentication.getPrincipal();
+        VisitorEntry entry = visitorEntryService.checkOut(guardUserId, id);
+        return VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry));
+    }
 }

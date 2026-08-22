@@ -24,4 +24,7 @@ public interface VisitorEntryRepository extends JpaRepository<VisitorEntry, Long
     @Query("select ve from VisitorEntry ve left join fetch ve.vehicle where ve.vehicle.registration = :registration and ve.property.id = :propertyId order by ve.enteredAt desc")
     List<VisitorEntry> findAllByVehicle_RegistrationAndProperty_IdOrderByEnteredAtDesc(
             @Param("registration") String registration, @Param("propertyId") Long propertyId);
+
+    @Query("select ve from VisitorEntry ve left join fetch ve.vehicle where ve.property.id = :propertyId and ve.exitedAt is null order by ve.enteredAt asc")
+    List<VisitorEntry> findAllOnSiteByProperty_Id(@Param("propertyId") Long propertyId);
 }

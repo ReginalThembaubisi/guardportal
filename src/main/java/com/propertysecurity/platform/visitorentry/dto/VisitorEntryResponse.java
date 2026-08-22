@@ -20,6 +20,7 @@ public record VisitorEntryResponse(
         boolean vehicleRecognized,
         LocalDateTime enteredAt,
         LocalDateTime exitedAt,
+        Long exitProcessedByGuardId,
         String notes,
         LocalDateTime createdAt
 ) {
@@ -39,6 +40,7 @@ public record VisitorEntryResponse(
                 vehicleRecognized,
                 entry.getEnteredAt(),
                 entry.getExitedAt(),
+                entry.getExitProcessedByGuard() != null ? entry.getExitProcessedByGuard().getId() : null,
                 entry.getNotes(),
                 entry.getCreatedAt());
     }

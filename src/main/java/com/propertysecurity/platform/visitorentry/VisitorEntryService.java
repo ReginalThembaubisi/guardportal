@@ -9,6 +9,7 @@ import com.propertysecurity.platform.guard.GuardRepository;
 import com.propertysecurity.platform.invitation.Invitation;
 import com.propertysecurity.platform.invitation.InvitationRepository;
 import com.propertysecurity.platform.invitation.InvitationStatus;
+import com.propertysecurity.platform.property.PropertyRepository;
 import com.propertysecurity.platform.unit.PropertyUnit;
 import com.propertysecurity.platform.vehicle.Vehicle;
 import com.propertysecurity.platform.vehicle.VehicleService;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,7 @@ public class VisitorEntryService {
     private final VisitorEntryRepository visitorEntryRepository;
     private final InvitationRepository invitationRepository;
     private final GuardRepository guardRepository;
+    private final PropertyRepository propertyRepository;
     private final VehicleService vehicleService;
     private final AuditLogService auditLogService;
 
@@ -107,6 +111,67 @@ public class VisitorEntryService {
 
     public boolean isVehicleRecognized(VisitorEntry entry) {
         return entry.getVehicle() != null && vehicleService.isRecognized(entry.getVehicle().getId());
+    }
+
+    /**
+     * Everyone currently on site at a property (exited_at IS NULL), grouped
+     * by category — all four categories always present, possibly empty.
+     * Scoped the same way as vehicle history: a guard can only query their
+     * own property; unscoped otherwise (currently only ADMIN, since
+     * SUPERVISOR/PROPERTY_MANAGER have no property association in the
+     * schema to scope by yet — see historyForRegistration).
+     */
+    @Transactional(readOnly = true)
+    public Map<VisitorCategory, List<VisitorEntry>> occupancy(Long callerUserId, Long propertyId) {
+        if (!propertyRepository.existsById(propertyId)) {
+            throw new ResourceNotFoundException("Property " + propertyId + " not found");
+        }
+
+        guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId).ifPresent(guard -> {
+            if (!guard.getProperty().getId().equals(propertyId)) {
+                throw new AccessDeniedException("This property is not yours");
+            }
+        });
+
+        Map<VisitorCategory, List<VisitorEntry>> byCategory = new EnumMap<>(VisitorCategory.class);
+        for (VisitorCategory category : VisitorCategory.values()) {
+            byCategory.put(category, new ArrayList<>());
+        }
+        for (VisitorEntry entry : visitorEntryRepository.findAllOnSiteByProperty_Id(propertyId)) {
+            byCategory.get(entry.getCategory()).add(entry);
+        }
+        return byCategory;
+    }
+
+    /**
+     * Checks a visitor out: server-stamps exited_at and records which guard
+     * processed the exit. Same property-match rule as check-in — a guard
+     * can only exit visitors at their own property. Writes an audit_log
+     * UPDATE row (CLAUDE.md rule 2).
+     */
+    public VisitorEntry checkOut(Long guardUserId, Long entryId) {
+        Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
+
+        VisitorEntry entry = visitorEntryRepository.findByIdFetchVehicle(entryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Visitor entry " + entryId + " not found"));
+
+        if (entry.getExitedAt() != null) {
+            throw new BadRequestException("This visitor has already exited");
+        }
+        if (!entry.getProperty().getId().equals(guard.getProperty().getId())) {
+            throw new AccessDeniedException("This visitor entry is for a different property");
+        }
+
+        entry.setExitedAt(LocalDateTime.now());
+        entry.setExitProcessedByGuard(guard);
+        VisitorEntry saved = visitorEntryRepository.save(entry);
+
+        auditLogService.record("visitor_entry", saved.getId(), AuditAction.UPDATE, guardUserId,
+                Map.of("exitedAt", "null"),
+                Map.of("exitedAt", saved.getExitedAt(), "exitProcessedByGuardId", guard.getId()));
+
+        return saved;
     }
 
     private void validateStatus(Invitation invitation) {
