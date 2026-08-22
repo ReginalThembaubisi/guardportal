@@ -3,7 +3,16 @@ spring:
     name: property-security-platform
 
   datasource:
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:property_security_platform}?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    # No serverTimezone param: DATETIME columns here are timezone-naive wall-clock
+    # values (see docs/property_security_schema.sql), and MySQL Connector/J converts
+    # LocalDateTime between the JVM's zone and connectionTimeZone when one is set —
+    # with serverTimezone=UTC previously here, every timestamp was silently shifted
+    # by the local UTC offset on write (and shifted back on read, masking it from the
+    # API but corrupting raw DB values — a real problem for the audit trail's
+    # legal-defensibility purpose). Omitting it defaults to "LOCAL" (the JVM's own
+    # zone on both sides), which is a no-op conversion — exactly what a timezone-naive
+    # column needs.
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:property_security_platform}?useSSL=false&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:property_security_app}
     # Local XAMPP dev default only — this database only exists on the dev machine.
     # Override via DB_PASSWORD env var for any non-local environment.
@@ -36,6 +45,11 @@ app:
     expose-code-in-response: ${OTP_EXPOSE_CODE:true}
     expiry-minutes: 5
     max-attempts: 5
+  checkin:
+    # Placeholder until the guard-facing frontend exists. QR codes encode
+    # base-url/{qrToken}. Override via CHECKIN_BASE_URL once that has a
+    # real home.
+    base-url: ${CHECKIN_BASE_URL:http://localhost:8080/checkin}
 
 logging:
   level:

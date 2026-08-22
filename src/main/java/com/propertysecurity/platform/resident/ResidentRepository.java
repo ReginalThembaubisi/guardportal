@@ -10,4 +10,6 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
     List<Resident> findAllByDeletedAtIsNull();
 
     Optional<Resident> findByIdAndDeletedAtIsNull(Long id);
+
+    Optional<Resident> findByUser_IdAndDeletedAtIsNull(Long userId);
 }

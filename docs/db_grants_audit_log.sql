@@ -49,6 +49,11 @@ GRANT UPDATE, DELETE ON property_security_platform.app_user_role TO 'property_se
 GRANT UPDATE, DELETE ON property_security_platform.resident TO 'property_security_app'@'localhost';
 GRANT UPDATE, DELETE ON property_security_platform.guard TO 'property_security_app'@'localhost';
 GRANT UPDATE, DELETE ON property_security_platform.otp_verification TO 'property_security_app'@'localhost';
+-- Phase 2: invitation.status transitions PENDING -> USED on a successful scan.
+GRANT UPDATE, DELETE ON property_security_platform.invitation TO 'property_security_app'@'localhost';
+-- visitor_entry is INSERT-only so far (covered by the database-wide grant
+-- above) — no UPDATE grant yet. Phase 4's exit flow (exited_at,
+-- exit_processed_by_guard_id) will need one; add it then, not before.
 
 GRANT UPDATE, DELETE ON property_security_platform.property TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE, DELETE ON property_security_platform.unit TO 'property_security_app'@'127.0.0.1';
@@ -57,6 +62,7 @@ GRANT UPDATE, DELETE ON property_security_platform.app_user_role TO 'property_se
 GRANT UPDATE, DELETE ON property_security_platform.resident TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE, DELETE ON property_security_platform.guard TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE, DELETE ON property_security_platform.otp_verification TO 'property_security_app'@'127.0.0.1';
+GRANT UPDATE, DELETE ON property_security_platform.invitation TO 'property_security_app'@'127.0.0.1';
 
 FLUSH PRIVILEGES;
 

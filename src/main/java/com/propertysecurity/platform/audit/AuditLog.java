@@ -50,7 +50,13 @@ public class AuditLog {
     @Column(name = "after_value", columnDefinition = "json")
     private String afterValue;
 
-    @Column(name = "performed_at", nullable = false)
+    // No fractional-second precision, matching the real MySQL DATETIME column
+    // (docs/property_security_schema.sql) — forced explicitly (via the ANSI
+    // TIMESTAMP(0) spelling H2's schema generator understands) so the H2
+    // test schema truncates the same way MySQL does. AuditLogService relies
+    // on this: it hashes a pre-truncated timestamp so the value it hashes is
+    // exactly what round-trips through this column.
+    @Column(name = "performed_at", nullable = false, columnDefinition = "TIMESTAMP(0)")
     private LocalDateTime performedAt;
 
     @Column(name = "record_hash", nullable = false, length = 64)

@@ -11,6 +11,7 @@ public class AppProperties {
 
     private final Jwt jwt = new Jwt();
     private final Otp otp = new Otp();
+    private final Checkin checkin = new Checkin();
 
     @Getter
     @Setter
@@ -31,5 +32,16 @@ public class AppProperties {
         private boolean exposeCodeInResponse;
         private int expiryMinutes;
         private int maxAttempts;
+    }
+
+    @Getter
+    @Setter
+    public static class Checkin {
+        /**
+         * No guard-facing frontend exists yet (in any phase). This is a
+         * placeholder base URL the QR code points to (base-url/{qrToken}),
+         * swappable via env var once the real guard PWA has a home.
+         */
+        private String baseUrl;
     }
 }

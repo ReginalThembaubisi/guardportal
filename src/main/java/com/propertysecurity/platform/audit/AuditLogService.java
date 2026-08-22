@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.List;
 
@@ -33,7 +34,12 @@ public class AuditLogService {
 
     public AuditLog record(String entityName, Long entityId, AuditAction action,
                             Long performedByUserId, Object beforeValue, Object afterValue) {
-        LocalDateTime performedAt = LocalDateTime.now();
+        // audit_log.performed_at is a plain DATETIME (no fractional seconds,
+        // per docs/property_security_schema.sql), so MySQL silently drops
+        // sub-second precision on write. Truncate here so the value hashed
+        // now is byte-for-byte what verifyChain() reads back later — without
+        // this, every row's hash would mismatch itself on the next verify.
+        LocalDateTime performedAt = LocalDateTime.now().truncatedTo(ChronoUnit.SECONDS);
         String beforeJson = toJson(beforeValue);
         String afterJson = toJson(afterValue);
         String previousHash = auditLogRepository.findTopByOrderByIdDesc()
