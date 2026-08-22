@@ -1,0 +1,24 @@
+:root {
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+}
+
+.placeholder {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  color: #33313a;
+}
+
+.placeholder p {
+  color: #6b6875;
+  max-width: 320px;
+}
