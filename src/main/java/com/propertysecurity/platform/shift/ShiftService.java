@@ -2,6 +2,7 @@ package com.propertysecurity.platform.shift;
 
 import com.propertysecurity.platform.audit.AuditAction;
 import com.propertysecurity.platform.audit.AuditLogService;
+import com.propertysecurity.platform.common.GeoDistance;
 import com.propertysecurity.platform.exception.BadRequestException;
 import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.guard.Guard;

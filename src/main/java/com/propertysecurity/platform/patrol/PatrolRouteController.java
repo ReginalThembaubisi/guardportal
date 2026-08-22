@@ -1,0 +1,37 @@
+package com.propertysecurity.platform.patrol;
+
+import com.propertysecurity.platform.patrol.dto.PatrolRouteRequest;
+import com.propertysecurity.platform.patrol.dto.PatrolRouteResponse;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/patrol-routes")
+@RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'ADMIN')")
+public class PatrolRouteController {
+
+    private final PatrolRouteService patrolRouteService;
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public PatrolRouteResponse create(@Valid @RequestBody PatrolRouteRequest request) {
+        PatrolRouteService.Created created = patrolRouteService.create(request);
+        return PatrolRouteResponse.from(created.route(), created.stops());
+    }
+
+    @GetMapping("/{id}")
+    public PatrolRouteResponse get(@PathVariable Long id) {
+        PatrolRoute route = patrolRouteService.get(id);
+        return PatrolRouteResponse.from(route, patrolRouteService.stopsFor(id));
+    }
+}

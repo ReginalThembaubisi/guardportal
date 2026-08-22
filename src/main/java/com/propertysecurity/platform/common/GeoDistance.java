@@ -1,16 +1,16 @@
-package com.propertysecurity.platform.shift;
+package com.propertysecurity.platform.common;
 
 import java.math.BigDecimal;
 
 /** Great-circle distance between two lat/lng points, via the haversine formula. */
-final class GeoDistance {
+public final class GeoDistance {
 
     private static final double EARTH_RADIUS_METERS = 6_371_000;
 
     private GeoDistance() {
     }
 
-    static int metersBetween(BigDecimal lat1, BigDecimal lng1, BigDecimal lat2, BigDecimal lng2) {
+    public static int metersBetween(BigDecimal lat1, BigDecimal lng1, BigDecimal lat2, BigDecimal lng2) {
         double phi1 = Math.toRadians(lat1.doubleValue());
         double phi2 = Math.toRadians(lat2.doubleValue());
         double deltaPhi = Math.toRadians(lat2.subtract(lat1).doubleValue());
