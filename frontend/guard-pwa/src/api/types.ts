@@ -35,6 +35,37 @@ export interface OccupancyResponse {
   byCategory: Record<VisitorCategory, VisitorEntryResponse[]>;
 }
 
+export interface ShiftResponse {
+  id: number;
+  guardId: number;
+  propertyId: number;
+  clockInAt: string;
+  clockInLatitude: number;
+  clockInLongitude: number;
+  clockInDistanceMeters: number | null;
+  clockInWithinTolerance: boolean | null;
+  clockOutAt: string | null;
+  clockOutLatitude: number | null;
+  clockOutLongitude: number | null;
+  clockOutDistanceMeters: number | null;
+  clockOutWithinTolerance: boolean | null;
+  createdAt: string;
+}
+
+export interface CheckpointScanResponse {
+  id: number;
+  checkpointId: number;
+  checkpointName: string;
+  shiftId: number;
+  guardId: number;
+  scannedAt: string;
+  latitude: number;
+  longitude: number;
+  distanceMeters: number | null;
+  withinTolerance: boolean | null;
+  createdAt: string;
+}
+
 export interface ApiErrorBody {
   status: number;
   error: string;

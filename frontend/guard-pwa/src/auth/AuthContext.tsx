@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import type { AuthResponse, Role } from "../api/types";
+import type { AuthResponse, Role, ShiftResponse } from "../api/types";
 
 interface AuthState {
   token: string;
@@ -15,6 +15,16 @@ interface AuthState {
    * just produces a clear "not yours" error rather than a security gap.
    */
   propertyId: number | null;
+  /**
+   * The guard's currently open shift, if any. There's no GET endpoint for
+   * "my current shift" either, so this is set from whatever clock-in/
+   * clock-out response last revealed it and persisted from there — it's
+   * what drives whether the Clock page shows "Clock in" or "Clock out".
+   * If clock-in fails because a shift is already open (e.g. after a
+   * reinstall wiped this), a minimal placeholder is stored instead — see
+   * ClockPage.
+   */
+  openShift: ShiftResponse | null;
 }
 
 interface AuthContextValue {
@@ -23,6 +33,7 @@ interface AuthContextValue {
   logout: () => void;
   hasRole: (role: Role) => boolean;
   setPropertyId: (propertyId: number) => void;
+  setOpenShift: (shift: ShiftResponse | null) => void;
 }
 
 const STORAGE_KEY = "guard-psp.auth";
@@ -60,10 +71,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           fullName: response.fullName,
           roles: response.roles,
           propertyId: null,
+          openShift: null,
         }),
       logout: () => setAuth(null),
       hasRole: (role) => auth?.roles.includes(role) ?? false,
       setPropertyId: (propertyId) => setAuth((prev) => (prev ? { ...prev, propertyId } : prev)),
+      setOpenShift: (openShift) => setAuth((prev) => (prev ? { ...prev, openShift } : prev)),
     }),
     [auth],
   );

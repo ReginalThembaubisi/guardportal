@@ -26,7 +26,7 @@ export default function LoginPage() {
         return;
       }
       login(response);
-      navigate("/checkin");
+      navigate("/clock");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Login failed");
     } finally {

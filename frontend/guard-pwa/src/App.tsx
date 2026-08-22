@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CheckInPage from "./pages/CheckInPage";
+import CheckpointScanPage from "./pages/CheckpointScanPage";
+import ClockPage from "./pages/ClockPage";
 import LoginPage from "./pages/LoginPage";
 import OccupancyPage from "./pages/OccupancyPage";
 
@@ -9,10 +11,26 @@ export default function App() {
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route
+        path="/clock"
+        element={
+          <ProtectedRoute>
+            <ClockPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/checkin"
         element={
           <ProtectedRoute>
             <CheckInPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scan"
+        element={
+          <ProtectedRoute>
+            <CheckpointScanPage />
           </ProtectedRoute>
         }
       />

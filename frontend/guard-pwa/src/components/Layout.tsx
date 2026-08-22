@@ -24,8 +24,14 @@ export default function Layout({ title, children }: { title: string; children: R
       </header>
       <main>{children}</main>
       <nav className="bottom-nav">
+        <NavLink to="/clock" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+          Clock
+        </NavLink>
         <NavLink to="/checkin" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Check in
+        </NavLink>
+        <NavLink to="/scan" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+          Scan
         </NavLink>
         <NavLink to="/occupancy" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Occupancy

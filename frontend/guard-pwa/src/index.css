@@ -127,6 +127,16 @@ form button[type="submit"]:disabled {
   margin-bottom: 14px;
 }
 
+.dev-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 0 0 14px;
+}
+
 .link-button {
   background: none;
   border: none;
@@ -326,4 +336,84 @@ form button[type="submit"]:disabled {
 .exit-button:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* Clock in/out */
+.clock-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+}
+
+.clock-status {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 10px;
+}
+
+.clock-button {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 18px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.clock-button:hover {
+  background: var(--accent-hover);
+}
+
+.clock-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.clock-button.clock-out {
+  background: var(--danger);
+}
+
+.clock-button.clock-out:hover {
+  background: #a32c2c;
+}
+
+.clock-summary {
+  margin-top: 16px;
+}
+
+.clock-summary h2 {
+  color: var(--success);
+  justify-content: center;
+}
+
+/* Tolerance badge (shift clock-in/out, checkpoint scans) */
+.tolerance-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-top: 4px;
+}
+
+.tolerance-ok {
+  background: rgba(27, 138, 76, 0.12);
+  color: var(--success);
+}
+
+.tolerance-flag {
+  background: rgba(194, 54, 54, 0.1);
+  color: var(--danger);
+}
+
+.tolerance-unknown {
+  background: var(--bg);
+  color: var(--text-muted);
+  font-weight: 500;
 }
