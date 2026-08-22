@@ -5,6 +5,7 @@ import CheckpointScanPage from "./pages/CheckpointScanPage";
 import ClockPage from "./pages/ClockPage";
 import LoginPage from "./pages/LoginPage";
 import OccupancyPage from "./pages/OccupancyPage";
+import WalkInPage from "./pages/WalkInPage";
 
 export default function App() {
   return (
@@ -23,6 +24,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CheckInPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/walk-in"
+        element={
+          <ProtectedRoute>
+            <WalkInPage />
           </ProtectedRoute>
         }
       />

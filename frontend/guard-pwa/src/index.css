@@ -217,6 +217,15 @@ form button[type="submit"]:disabled {
   color: var(--success);
 }
 
+.checkin-result.pending {
+  background: rgba(217, 143, 15, 0.08);
+  border-color: rgba(217, 143, 15, 0.3);
+}
+
+.checkin-result.pending h2 {
+  color: #b3760f;
+}
+
 .checkin-visitor-name {
   font-size: 18px;
   font-weight: 600;

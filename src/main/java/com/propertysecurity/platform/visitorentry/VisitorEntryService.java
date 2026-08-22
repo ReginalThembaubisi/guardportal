@@ -106,13 +106,13 @@ public class VisitorEntryService {
     /**
      * Walk-in / unexpected visitor: no invitation code, so invitation stays
      * null (the schema's own documented meaning of that column — see
-     * property_security_schema.sql). AUTO_APPROVED for now, same as a
-     * scanned check-in — there's no push/SMS channel yet to put a real
-     * PENDING-approval workflow behind, so this isn't approximated with a
-     * fake one; it's flagged for resident/PM review after the fact by
-     * simply being visible in the same occupancy/history views with no
-     * invitationId. Audited the same as every other visitor_entry write
-     * (CLAUDE.md rule 2).
+     * property_security_schema.sql). PENDING, not AUTO_APPROVED — unlike a
+     * scanned check-in (backed by a resident-issued invitation), nobody has
+     * actually vetted this visitor, so it's flagged for review rather than
+     * silently treated as approved. There's no push/SMS channel yet to
+     * drive a live approve/deny workflow off that PENDING status — it's
+     * surfaced passively via occupancy/history (no invitationId) for now.
+     * Audited the same as every other visitor_entry write (CLAUDE.md rule 2).
      */
     public VisitorEntry checkInWalkIn(Long guardUserId, WalkInVisitorRequest request) {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
@@ -132,10 +132,10 @@ public class VisitorEntryService {
         entry.setUnit(unit);
         entry.setVisitorName(request.visitorName());
         entry.setVisitorPhone(request.visitorPhone());
-        entry.setCategory(request.category());
+        entry.setCategory(request.category() != null ? request.category() : VisitorCategory.VISITOR);
         entry.setProcessedByGuard(guard);
         entry.setEnteredAt(LocalDateTime.now());
-        entry.setApprovalStatus(ApprovalStatus.AUTO_APPROVED);
+        entry.setApprovalStatus(ApprovalStatus.PENDING);
         entry.setNotes(request.purpose());
 
         VisitorEntry saved = visitorEntryRepository.save(entry);
