@@ -14,8 +14,10 @@ import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
 import com.propertysecurity.platform.resident.Resident;
 import com.propertysecurity.platform.resident.ResidentRepository;
 import com.propertysecurity.platform.unit.PropertyUnit;
+import com.propertysecurity.platform.unit.PropertyUnitRepository;
 import com.propertysecurity.platform.vehicle.Vehicle;
 import com.propertysecurity.platform.vehicle.VehicleService;
+import com.propertysecurity.platform.visitorentry.dto.WalkInVisitorRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -40,6 +42,7 @@ public class VisitorEntryService {
     private final PropertyRepository propertyRepository;
     private final PropertyManagerRepository propertyManagerRepository;
     private final ResidentRepository residentRepository;
+    private final PropertyUnitRepository propertyUnitRepository;
     private final VehicleService vehicleService;
     private final AuditLogService auditLogService;
 
@@ -98,6 +101,47 @@ public class VisitorEntryService {
 
         boolean recognized = vehicle != null && vehicleService.isRecognized(vehicle.getId());
         return new CheckInResult(saved, recognized);
+    }
+
+    /**
+     * Walk-in / unexpected visitor: no invitation code, so invitation stays
+     * null (the schema's own documented meaning of that column — see
+     * property_security_schema.sql). AUTO_APPROVED for now, same as a
+     * scanned check-in — there's no push/SMS channel yet to put a real
+     * PENDING-approval workflow behind, so this isn't approximated with a
+     * fake one; it's flagged for resident/PM review after the fact by
+     * simply being visible in the same occupancy/history views with no
+     * invitationId. Audited the same as every other visitor_entry write
+     * (CLAUDE.md rule 2).
+     */
+    public VisitorEntry checkInWalkIn(Long guardUserId, WalkInVisitorRequest request) {
+        Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
+
+        PropertyUnit unit = null;
+        if (request.unitId() != null) {
+            unit = propertyUnitRepository.findByIdAndDeletedAtIsNull(request.unitId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Unit " + request.unitId() + " not found"));
+            if (!unit.getProperty().getId().equals(guard.getProperty().getId())) {
+                throw new BadRequestException("Unit " + request.unitId() + " is not at your property");
+            }
+        }
+
+        VisitorEntry entry = new VisitorEntry();
+        entry.setProperty(guard.getProperty());
+        entry.setUnit(unit);
+        entry.setVisitorName(request.visitorName());
+        entry.setVisitorPhone(request.visitorPhone());
+        entry.setCategory(request.category());
+        entry.setProcessedByGuard(guard);
+        entry.setEnteredAt(LocalDateTime.now());
+        entry.setApprovalStatus(ApprovalStatus.AUTO_APPROVED);
+        entry.setNotes(request.purpose());
+
+        VisitorEntry saved = visitorEntryRepository.save(entry);
+        auditLogService.record("visitor_entry", saved.getId(), AuditAction.CREATE,
+                guardUserId, null, snapshot(saved));
+        return saved;
     }
 
     /**
