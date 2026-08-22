@@ -41,6 +41,24 @@ export interface OccupancyResponse {
   byCategory: Record<VisitorCategory, VisitorEntryResponse[]>;
 }
 
+export type InvitationStatus = "PENDING" | "USED" | "EXPIRED" | "CANCELLED";
+
+export interface InvitationResponse {
+  id: number;
+  visitorName: string;
+  visitorPhone: string | null;
+  expectedVehicleReg: string | null;
+  purpose: string | null;
+  validFrom: string;
+  validUntil: string;
+  status: InvitationStatus;
+  qrToken: string;
+  checkInUrl: string;
+  qrCodeDataUri: string | null;
+  whatsappShareLink: string | null;
+  createdAt: string;
+}
+
 export interface PropertyManagerResponse {
   id: number;
   userId: number;
