@@ -142,6 +142,38 @@ button {
   font-family: inherit;
 }
 
+.password-field {
+  position: relative;
+  display: flex;
+}
+
+.password-field input {
+  flex: 1;
+  padding-right: 64px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 56px;
+  min-height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--accent);
+}
+
 form button[type="submit"] {
   margin-top: 4px;
   padding: 14px;
