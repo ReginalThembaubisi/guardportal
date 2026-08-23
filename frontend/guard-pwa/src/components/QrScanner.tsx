@@ -53,17 +53,21 @@ export default function QrScanner({ onDecode }: { onDecode: (decodedText: string
       cancelled = true;
       // start() is async (it awaits camera permission), so React StrictMode's
       // dev-only mount→unmount→remount can run this cleanup before the camera
-      // has actually attached. Tearing down only when isScanning is already
-      // true misses that window: the stream finishes attaching *after*
-      // cleanup returns, right as the remount's own scanner starts — two
-      // live video feeds end up stacked in the same container. Chaining onto
-      // startPromise guarantees whatever did start gets stopped, however
-      // long it took to get there.
+      // has actually attached. Chaining onto startPromise guarantees whatever
+      // did start gets torn down, however long it took to get there — a plain
+      // isScanning check here would miss anything still starting.
+      //
+      // Deliberately calling only stop(), never clear(): stop() surgically
+      // removes just *this* instance's own video/canvas/shaded-region nodes
+      // (see html5-qrcode's RenderedCameraImpl.close, which removeChild()s
+      // only its own surface element). clear() instead does
+      // element.innerHTML = "" on the shared container — if the StrictMode
+      // remount's own scanner has already attached its video by the time
+      // this runs, clear() would wipe that live feed out too, not just the
+      // stale one this instance owns.
       startPromise.finally(() => {
         if (scanner.isScanning) {
-          scanner.stop().then(() => scanner.clear()).catch(() => {});
-        } else {
-          scanner.clear();
+          scanner.stop().catch(() => {});
         }
       });
     };
