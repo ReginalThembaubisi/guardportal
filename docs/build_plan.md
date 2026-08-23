@@ -75,3 +75,9 @@ actual guards and residents will change some of these before they're worth build
 > **2026-08-22: guard clock-in/out was built ahead of pilot feedback, at the dev's explicit
 > request after being shown this note.** Everything below in this section is still un-piloted —
 > treat the shift table and endpoints as a first pass likely to change once real guards use it.
+
+> **2026-08-23: incident + incident_media were built (report/view/status), also ahead of pilot
+> feedback, at the dev's explicit request.** The evidence-pack PDF export that
+> `docs/audit_trail_design.md` recommends building alongside incidents was deliberately deferred —
+> not built yet. `GET /incidents/{id}/evidence-pack` still needs to happen before this feature is
+> what the client proposal actually promised ("court-admissible incident records").

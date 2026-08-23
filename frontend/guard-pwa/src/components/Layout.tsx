@@ -42,6 +42,9 @@ export default function Layout({ title, children }: { title: string; children: R
         <NavLink to="/vehicle-history" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Vehicles
         </NavLink>
+        <NavLink to="/report-incident" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+          Incident
+        </NavLink>
       </nav>
     </div>
   );

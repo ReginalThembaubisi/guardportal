@@ -32,6 +32,13 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
+  servlet:
+    multipart:
+      # Incident photo attachments. A few smartphone photos comfortably
+      # fit under this; tune per-property if real usage needs more.
+      max-file-size: 10MB
+      max-request-size: 50MB
+
 server:
   port: ${SERVER_PORT:8080}
 
@@ -56,6 +63,12 @@ app:
     # personal phones with variable GPS accuracy, so this is deliberately loose —
     # first-pass verification, not a hardened anti-fraud system.
     default-tolerance-meters: ${GEO_DEFAULT_TOLERANCE_METERS:150}
+  uploads:
+    # Incident photo storage — local disk, not committed to git (see
+    # .gitignore) and never served as static content. Read back only
+    # through IncidentReadController.media, which checks the caller can
+    # access the incident's property first.
+    dir: ${UPLOADS_DIR:./uploads}
 
 logging:
   level:

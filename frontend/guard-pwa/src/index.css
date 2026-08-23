@@ -82,7 +82,8 @@ label {
 }
 
 input,
-select {
+select,
+textarea {
   font-size: 16px;
   padding: 12px 10px;
   border: 1px solid var(--border);
@@ -90,6 +91,7 @@ select {
   font-family: inherit;
   color: var(--text);
   background: var(--card-bg);
+  resize: vertical;
 }
 
 button {
@@ -222,6 +224,7 @@ form button[type="submit"]:disabled {
   left: 0;
   right: 0;
   display: flex;
+  overflow-x: auto;
   background: var(--card-bg);
   border-top: 1px solid var(--border);
   max-width: 640px;
@@ -229,13 +232,15 @@ form button[type="submit"]:disabled {
 }
 
 .nav-item {
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 72px;
   text-align: center;
-  padding: 12px 2px;
-  font-size: 11px;
+  padding: 12px 8px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .nav-item.active {

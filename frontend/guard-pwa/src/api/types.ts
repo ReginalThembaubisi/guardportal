@@ -66,6 +66,33 @@ export interface CheckpointScanResponse {
   createdAt: string;
 }
 
+export type IncidentSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+export type IncidentStatus = "OPEN" | "INVESTIGATING" | "RESOLVED";
+
+export interface IncidentMediaResponse {
+  id: number;
+  originalFilename: string;
+  contentType: string;
+  fileSizeBytes: number;
+  createdAt: string;
+}
+
+export interface IncidentResponse {
+  id: number;
+  propertyId: number;
+  reportedByGuardId: number;
+  reportedByGuardName: string;
+  shiftId: number;
+  description: string;
+  severity: IncidentSeverity;
+  status: IncidentStatus;
+  latitude: number;
+  longitude: number;
+  reportedAt: string;
+  media: IncidentMediaResponse[];
+  createdAt: string;
+}
+
 export interface ApiErrorBody {
   status: number;
   error: string;

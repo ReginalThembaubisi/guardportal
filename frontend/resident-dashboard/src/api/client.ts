@@ -11,7 +11,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   token?: string | null;
 }
@@ -41,4 +41,16 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   }
 
   return data as T;
+}
+
+/** For endpoints behind auth that return raw bytes (e.g. incident photos) — a plain <img src> can't send an Authorization header. */
+export async function apiFetchBlob(path: string, token: string): Promise<string> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    throw new ApiError(response.status, `Failed to load file (status ${response.status})`);
+  }
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }

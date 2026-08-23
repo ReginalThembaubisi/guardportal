@@ -7,6 +7,7 @@ import LoginPage from "./pages/LoginPage";
 import OccupancyPage from "./pages/OccupancyPage";
 import WalkInPage from "./pages/WalkInPage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
+import ReportIncidentPage from "./pages/ReportIncidentPage";
 
 export default function App() {
   return (
@@ -57,6 +58,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <VehicleHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/report-incident"
+        element={
+          <ProtectedRoute>
+            <ReportIncidentPage />
           </ProtectedRoute>
         }
       />

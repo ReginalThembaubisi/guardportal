@@ -62,6 +62,16 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/vehicle-history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Vehicle History
           </NavLink>
+          <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Incidents
+          </NavLink>
+        </nav>
+      )}
+      {hasRole("SUPERVISOR") && (
+        <nav className="top-nav">
+          <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Incidents
+          </NavLink>
         </nav>
       )}
 

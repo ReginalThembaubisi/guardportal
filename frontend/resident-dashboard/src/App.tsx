@@ -11,6 +11,7 @@ import CreatePatrolRoutePage from "./pages/CreatePatrolRoutePage";
 import PatrolStatusPage from "./pages/PatrolStatusPage";
 import CreateGuardPage from "./pages/CreateGuardPage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
+import IncidentsPage from "./pages/IncidentsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -102,6 +103,14 @@ export default function App() {
         element={
           <ProtectedRoute role="PROPERTY_MANAGER">
             <VehicleHistoryPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/incidents"
+        element={
+          <ProtectedRoute role={["PROPERTY_MANAGER", "SUPERVISOR"]}>
+            <IncidentsPage />
           </ProtectedRoute>
         }
       />

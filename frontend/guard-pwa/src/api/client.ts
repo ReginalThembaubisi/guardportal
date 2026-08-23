@@ -11,21 +11,33 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions {
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   token?: string | null;
 }
 
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const headers: Record<string, string> = {};
   if (options.token) {
     headers["Authorization"] = `Bearer ${options.token}`;
+  }
+
+  // FormData (multipart uploads) must not be JSON-stringified, and the
+  // browser needs to set its own Content-Type with the multipart boundary
+  // — setting one here would strip that boundary and break parsing server-side.
+  const isFormData = options.body instanceof FormData;
+  let body: BodyInit | undefined;
+  if (isFormData) {
+    body = options.body as FormData;
+  } else if (options.body !== undefined) {
+    headers["Content-Type"] = "application/json";
+    body = JSON.stringify(options.body);
   }
 
   const response = await fetch(`${BASE_URL}${path}`, {
     method: options.method ?? "GET",
     headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    body,
   });
 
   if (response.status === 204) {

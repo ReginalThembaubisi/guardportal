@@ -60,6 +60,11 @@ GRANT UPDATE ON property_security_platform.visitor_entry TO 'property_security_a
 -- on the row the clock-in created. UPDATE only, no DELETE — same append-mostly
 -- reasoning as visitor_entry (see the Shift entity's own docstring).
 GRANT UPDATE ON property_security_platform.shift TO 'property_security_app'@'localhost';
+-- Phase 5: status transitions OPEN -> INVESTIGATING -> RESOLVED. UPDATE
+-- only, no DELETE — same append-mostly reasoning as shift/visitor_entry.
+-- incident_media is write-once (no UPDATE/DELETE needed, same as
+-- checkpoint_scan) so it isn't listed here.
+GRANT UPDATE ON property_security_platform.incident TO 'property_security_app'@'localhost';
 
 GRANT UPDATE, DELETE ON property_security_platform.property TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE, DELETE ON property_security_platform.unit TO 'property_security_app'@'127.0.0.1';
@@ -71,6 +76,7 @@ GRANT UPDATE, DELETE ON property_security_platform.otp_verification TO 'property
 GRANT UPDATE, DELETE ON property_security_platform.invitation TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE ON property_security_platform.visitor_entry TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE ON property_security_platform.shift TO 'property_security_app'@'127.0.0.1';
+GRANT UPDATE ON property_security_platform.incident TO 'property_security_app'@'127.0.0.1';
 
 FLUSH PRIVILEGES;
 

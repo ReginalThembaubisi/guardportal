@@ -2,6 +2,10 @@ target/
 *.class
 *.log
 
+# Incident photo attachments — local disk storage, never committed (see
+# app.uploads.dir in application.yml)
+uploads/
+
 # IDE
 .idea/
 *.iml

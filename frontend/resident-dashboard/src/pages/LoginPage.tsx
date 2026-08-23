@@ -18,6 +18,8 @@ export default function LoginPage() {
       navigate("/history");
     } else if (response.roles.includes("PROPERTY_MANAGER")) {
       navigate("/dashboard");
+    } else if (response.roles.includes("SUPERVISOR")) {
+      navigate("/incidents");
     } else {
       navigate("/");
     }

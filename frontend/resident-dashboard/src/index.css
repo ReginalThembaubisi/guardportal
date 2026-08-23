@@ -442,3 +442,77 @@ form button[type="submit"]:disabled {
   display: flex;
   gap: 8px;
 }
+
+/* Incidents */
+.incident-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.incident-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.incident-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.badge.severity-low {
+  background: rgba(107, 104, 117, 0.12);
+  color: var(--text-muted);
+}
+
+.badge.severity-medium {
+  background: rgba(217, 143, 15, 0.12);
+  color: #b3760f;
+}
+
+.badge.severity-high,
+.badge.severity-critical {
+  background: rgba(194, 54, 54, 0.12);
+  color: var(--danger);
+}
+
+.badge.status-open {
+  background: rgba(194, 54, 54, 0.12);
+  color: var(--danger);
+}
+
+.badge.status-investigating {
+  background: rgba(217, 143, 15, 0.12);
+  color: #b3760f;
+}
+
+.badge.status-resolved {
+  background: rgba(27, 138, 76, 0.12);
+  color: var(--success);
+}
+
+.incident-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.incident-photo,
+.incident-photo-loading {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.incident-status-select {
+  max-width: 200px;
+  margin-top: 10px;
+}
