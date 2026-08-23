@@ -3,6 +3,7 @@ import { apiFetch, ApiError } from "../api/client";
 import type { VisitorEntryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import Seal from "../components/Seal";
 
 export default function VehicleHistoryPage() {
   const { auth } = useAuth();
@@ -67,7 +68,12 @@ export default function VehicleHistoryPage() {
               <tr key={entry.id}>
                 <td>
                   {entry.visitorName}
-                  {entry.vehicleRecognized && <span className="badge recognized"> recognized</span>}
+                  {entry.vehicleRecognized && (
+                    <>
+                      {" "}
+                      <Seal state="cleared">Recognized</Seal>
+                    </>
+                  )}
                 </td>
                 <td>{entry.category}</td>
                 <td>{new Date(entry.enteredAt).toLocaleString()}</td>

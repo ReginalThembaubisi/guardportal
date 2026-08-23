@@ -4,6 +4,7 @@ import type { VisitorEntryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 import QrScanner from "../components/QrScanner";
+import Seal from "../components/Seal";
 
 export default function CheckInPage() {
   const { auth, setPropertyId } = useAuth();
@@ -85,7 +86,12 @@ export default function CheckInPage() {
               <>
                 {" "}
                 · {lastCheckIn.vehicleRegistration}
-                {lastCheckIn.vehicleRecognized && <span className="badge recognized"> recognized</span>}
+                {lastCheckIn.vehicleRecognized && (
+                  <>
+                    {" "}
+                    <Seal state="cleared">Recognized</Seal>
+                  </>
+                )}
               </>
             )}
             {" · "}

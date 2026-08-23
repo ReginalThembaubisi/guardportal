@@ -3,6 +3,7 @@ import { apiFetch, ApiError } from "../api/client";
 import type { MissedCheckpointResponse, PatrolRouteResponse, PropertyManagerResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import Seal from "../components/Seal";
 
 /** datetime-local wants "YYYY-MM-DDTHH:mm" in local time — no timezone suffix. */
 function toLocalInputValue(date: Date): string {
@@ -142,11 +143,7 @@ export default function PatrolStatusPage() {
                   <td>{c.sequenceOrder}</td>
                   <td>{c.name}</td>
                   <td>
-                    {c.scanned ? (
-                      <span className="badge recognized">scanned</span>
-                    ) : (
-                      <span className="badge missed">missed</span>
-                    )}
+                    {c.scanned ? <Seal state="cleared">Scanned</Seal> : <Seal state="flagged">Missed</Seal>}
                   </td>
                   <td>{c.scanCount}</td>
                   <td>{c.firstScanAt ? new Date(c.firstScanAt).toLocaleString() : "—"}</td>
