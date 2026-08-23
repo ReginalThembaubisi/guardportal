@@ -183,6 +183,32 @@ export interface IncidentResponse {
   createdAt: string;
 }
 
+export interface PropertyResponse {
+  id: number;
+  name: string;
+  address: string | null;
+  timezone: string;
+  latitude: number | null;
+  longitude: number | null;
+  geoToleranceMeters: number | null;
+  createdAt: string;
+}
+
+export interface UserResponse {
+  id: number;
+  fullName: string;
+  phoneNumber: string;
+  email: string | null;
+  roles: Role[];
+  active: boolean;
+  createdAt: string;
+}
+
+export interface AuditVerificationResponse {
+  valid: boolean;
+  firstBrokenId: number | null;
+}
+
 export interface ApiErrorBody {
   status: number;
   error: string;

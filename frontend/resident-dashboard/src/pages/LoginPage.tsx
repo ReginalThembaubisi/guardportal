@@ -20,6 +20,8 @@ export default function LoginPage() {
       navigate("/dashboard");
     } else if (response.roles.includes("SUPERVISOR")) {
       navigate("/incidents");
+    } else if (response.roles.includes("ADMIN")) {
+      navigate("/admin/properties");
     } else {
       navigate("/");
     }

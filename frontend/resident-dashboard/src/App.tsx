@@ -12,6 +12,11 @@ import PatrolStatusPage from "./pages/PatrolStatusPage";
 import CreateGuardPage from "./pages/CreateGuardPage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
 import IncidentsPage from "./pages/IncidentsPage";
+import AdminPropertiesPage from "./pages/admin/AdminPropertiesPage";
+import AdminUnitsPage from "./pages/admin/AdminUnitsPage";
+import AdminStaffPage from "./pages/admin/AdminStaffPage";
+import AdminLinkStaffPage from "./pages/admin/AdminLinkStaffPage";
+import AdminAuditPage from "./pages/admin/AdminAuditPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
@@ -111,6 +116,46 @@ export default function App() {
         element={
           <ProtectedRoute role={["PROPERTY_MANAGER", "SUPERVISOR"]}>
             <IncidentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/properties"
+        element={
+          <ProtectedRoute role="ADMIN">
+            <AdminPropertiesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/units"
+        element={
+          <ProtectedRoute role="ADMIN">
+            <AdminUnitsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/staff"
+        element={
+          <ProtectedRoute role="ADMIN">
+            <AdminStaffPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/link-staff"
+        element={
+          <ProtectedRoute role="ADMIN">
+            <AdminLinkStaffPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/audit"
+        element={
+          <ProtectedRoute role="ADMIN">
+            <AdminAuditPage />
           </ProtectedRoute>
         }
       />

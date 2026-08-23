@@ -74,6 +74,25 @@ export default function Layout({ title, children }: { title: string; children: R
           </NavLink>
         </nav>
       )}
+      {hasRole("ADMIN") && (
+        <nav className="top-nav">
+          <NavLink to="/admin/properties" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Properties
+          </NavLink>
+          <NavLink to="/admin/units" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Units
+          </NavLink>
+          <NavLink to="/admin/staff" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Staff
+          </NavLink>
+          <NavLink to="/admin/link-staff" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Link Staff
+          </NavLink>
+          <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Audit
+          </NavLink>
+        </nav>
+      )}
 
       <main>{children}</main>
     </div>
