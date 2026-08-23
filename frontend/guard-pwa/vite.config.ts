@@ -7,6 +7,10 @@ export default defineConfig({
   server: {
     port: 5176,
     strictPort: true,
+    // Quick tunnels (cloudflared tunnel --url ...) get a random *.trycloudflare.com
+    // hostname each run — Vite's Host-header check would 403 it otherwise since
+    // it isn't localhost. The leading dot allows any subdomain.
+    allowedHosts: [".trycloudflare.com"],
     // Forwards API calls to the backend so the app can be reached through a
     // tunnel (or any host other than localhost) from another device — the
     // browser always calls same-origin /api/..., and only this dev server
