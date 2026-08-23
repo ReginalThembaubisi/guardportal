@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * First pass on GPS verification, not a hardened anti-fraud system —
@@ -59,6 +60,14 @@ public class ShiftService {
         Shift saved = shiftRepository.save(shift);
         auditLogService.record("shift", saved.getId(), AuditAction.CREATE, guardUserId, null, snapshot(saved));
         return saved;
+    }
+
+    /** Read-only — lets a guard's app recover its clocked-in/out state on load instead of relying on local caching. */
+    @Transactional(readOnly = true)
+    public Optional<Shift> getCurrentShift(Long guardUserId) {
+        Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
+        return shiftRepository.findOpenByGuardIdFetchProperty(guard.getId());
     }
 
     public Shift clockOut(Long guardUserId, LocationRequest location) {
