@@ -31,6 +31,12 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/invite" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             New Invitation
           </NavLink>
+          <NavLink to="/invitations/pending" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Pending Invitations
+          </NavLink>
+          <NavLink to="/vehicles" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            My Vehicles
+          </NavLink>
         </nav>
       )}
       {hasRole("PROPERTY_MANAGER") && (

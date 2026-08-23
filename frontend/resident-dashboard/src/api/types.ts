@@ -140,6 +140,15 @@ export interface GuardResponse {
   createdAt: string;
 }
 
+export interface VehicleResponse {
+  id: number;
+  registration: string;
+  make: string | null;
+  model: string | null;
+  colour: string | null;
+  createdAt: string;
+}
+
 export interface ApiErrorBody {
   status: number;
   error: string;

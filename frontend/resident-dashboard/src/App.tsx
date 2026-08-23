@@ -2,6 +2,8 @@ import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import ResidentHistoryPage from "./pages/ResidentHistoryPage";
 import CreateInvitationPage from "./pages/CreateInvitationPage";
+import PendingInvitationsPage from "./pages/PendingInvitationsPage";
+import VehicleRegistrationPage from "./pages/VehicleRegistrationPage";
 import OccupancyDashboardPage from "./pages/OccupancyDashboardPage";
 import CreateResidentPage from "./pages/CreateResidentPage";
 import CreateCheckpointPage from "./pages/CreateCheckpointPage";
@@ -28,6 +30,22 @@ export default function App() {
         element={
           <ProtectedRoute role="RESIDENT">
             <CreateInvitationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/invitations/pending"
+        element={
+          <ProtectedRoute role="RESIDENT">
+            <PendingInvitationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vehicles"
+        element={
+          <ProtectedRoute role="RESIDENT">
+            <VehicleRegistrationPage />
           </ProtectedRoute>
         }
       />
