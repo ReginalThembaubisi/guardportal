@@ -28,27 +28,16 @@ export default function ClockPage() {
       setPropertyId(shift.propertyId);
     } catch (err) {
       if (err instanceof ApiError && err.message.toLowerCase().includes("already have an open shift")) {
-        // Local state didn't know about it (e.g. reinstalled the app
-        // mid-shift) — there's no "my current shift" endpoint to recover
-        // the original details from, so just unblock the Clock Out button
-        // with what we do know.
-        setOpenShift({
-          id: -1,
-          guardId: auth.userId,
-          propertyId: auth.propertyId ?? 0,
-          clockInAt: new Date().toISOString(),
-          clockInLatitude: 0,
-          clockInLongitude: 0,
-          clockInDistanceMeters: null,
-          clockInWithinTolerance: null,
-          clockOutAt: null,
-          clockOutLatitude: null,
-          clockOutLongitude: null,
-          clockOutDistanceMeters: null,
-          clockOutWithinTolerance: null,
-          createdAt: new Date().toISOString(),
-        });
-        setError("You already had an open shift — details unavailable, but you can clock out below.");
+        // Local state didn't know about it — a race with AuthContext's own
+        // refresh, or that refresh failed (e.g. offline) right before this
+        // tap. Fetch the real thing instead of guessing at it.
+        try {
+          const shift = await apiFetch<ShiftResponse>("/api/v1/shifts/current", { token: auth.token });
+          setOpenShift(shift);
+          setPropertyId(shift.propertyId);
+        } catch {
+          setError("You already have an open shift, but its details couldn't be loaded — try again.");
+        }
       } else {
         setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Clock-in failed");
       }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { apiFetch } from "../api/client";
 import type { AuthResponse, Role, ShiftResponse } from "../api/types";
 
 interface AuthState {
@@ -16,13 +17,13 @@ interface AuthState {
    */
   propertyId: number | null;
   /**
-   * The guard's currently open shift, if any. There's no GET endpoint for
-   * "my current shift" either, so this is set from whatever clock-in/
-   * clock-out response last revealed it and persisted from there — it's
-   * what drives whether the Clock page shows "Clock in" or "Clock out".
-   * If clock-in fails because a shift is already open (e.g. after a
-   * reinstall wiped this), a minimal placeholder is stored instead — see
-   * ClockPage.
+   * The guard's currently open shift, if any — drives whether the Clock
+   * page shows "Clock in" or "Clock out". Refreshed from
+   * GET /api/v1/shifts/current whenever the token changes (fresh login or
+   * restoring a session from storage), so it reflects the server's view
+   * rather than possibly-stale local state. Also set directly by clock-in/
+   * clock-out responses so the UI updates immediately without waiting on
+   * that refetch.
    */
   openShift: ShiftResponse | null;
 }
@@ -60,6 +61,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(STORAGE_KEY);
     }
   }, [auth]);
+
+  // Authoritative refresh of clock-in state: runs on a fresh login and on
+  // restoring a session from storage (both change the token), so the app
+  // never shows "not clocked in" just because local state didn't carry
+  // over — the actual bug reported ("clock in every time I open the app").
+  // Deliberately keyed on the token, not on `auth` as a whole, so this
+  // doesn't refire every time clockIn/clockOut update openShift themselves.
+  useEffect(() => {
+    const token = auth?.token;
+    if (!token) return;
+    let cancelled = false;
+    apiFetch<ShiftResponse | undefined>("/api/v1/shifts/current", { token })
+      .then((shift) => {
+        if (cancelled) return;
+        setAuth((prev) =>
+          prev && prev.token === token
+            ? { ...prev, openShift: shift ?? null, propertyId: shift?.propertyId ?? prev.propertyId }
+            : prev,
+        );
+      })
+      .catch(() => {
+        // Not fatal — e.g. offline. Keep whatever was cached locally.
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth?.token]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
