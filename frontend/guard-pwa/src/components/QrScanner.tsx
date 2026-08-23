@@ -22,7 +22,7 @@ export default function QrScanner({ onDecode }: { onDecode: (decodedText: string
     scannerRef.current = scanner;
     let cancelled = false;
 
-    scanner
+    const startPromise = scanner
       .start(
         { facingMode: "environment" },
         { fps: 10, qrbox: { width: 250, height: 250 } },
@@ -51,11 +51,21 @@ export default function QrScanner({ onDecode }: { onDecode: (decodedText: string
 
     return () => {
       cancelled = true;
-      if (scanner.isScanning) {
-        scanner.stop().then(() => scanner.clear()).catch(() => {});
-      } else {
-        scanner.clear();
-      }
+      // start() is async (it awaits camera permission), so React StrictMode's
+      // dev-only mount→unmount→remount can run this cleanup before the camera
+      // has actually attached. Tearing down only when isScanning is already
+      // true misses that window: the stream finishes attaching *after*
+      // cleanup returns, right as the remount's own scanner starts — two
+      // live video feeds end up stacked in the same container. Chaining onto
+      // startPromise guarantees whatever did start gets stopped, however
+      // long it took to get there.
+      startPromise.finally(() => {
+        if (scanner.isScanning) {
+          scanner.stop().then(() => scanner.clear()).catch(() => {});
+        } else {
+          scanner.clear();
+        }
+      });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elementId]);
