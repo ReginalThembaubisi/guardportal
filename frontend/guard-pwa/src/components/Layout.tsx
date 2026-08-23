@@ -16,7 +16,14 @@ export default function Layout({ title, children }: { title: string; children: R
       <header className="layout-header">
         <h1>{title}</h1>
         <div className="layout-header-right">
-          {auth && <span className="user-name">{auth.fullName}</span>}
+          {auth && (
+            <span className="user-name">
+              {auth.fullName}
+              {/* Only known while actually on shift — not shown when off duty, since a
+                  last-known property could mislead after a reassignment. */}
+              {auth.openShift && <span className="user-property"> · {auth.openShift.propertyName}</span>}
+            </span>
+          )}
           <button className="link-button" onClick={handleLogout}>
             Log out
           </button>

@@ -39,6 +39,7 @@ export interface ShiftResponse {
   id: number;
   guardId: number;
   propertyId: number;
+  propertyName: string;
   clockInAt: string;
   clockInLatitude: number;
   clockInLongitude: number;
