@@ -48,14 +48,16 @@ public class SecurityConfig {
     /**
      * Dev-only: allows any localhost port, since the two frontend apps
      * (frontend/resident-dashboard, frontend/guard-pwa) run on Vite dev
-     * server ports that can shift. No Authorization-header request needs
-     * allowCredentials, so this stays simple. Tighten to the real deployed
-     * frontend origin(s) before any non-local deployment.
+     * server ports that can shift, plus any *.trycloudflare.com quick-tunnel
+     * hostname (see guard-pwa's vite.config.ts allowedHosts) so the app is
+     * reachable from another device during testing. No Authorization-header
+     * request needs allowCredentials, so this stays simple. Tighten to the
+     * real deployed frontend origin(s) before any non-local deployment.
      */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:*"));
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "https://*.trycloudflare.com"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
 
