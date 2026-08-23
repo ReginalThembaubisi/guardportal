@@ -1,14 +1,24 @@
-import type { ReactNode } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useState, type ReactNode } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+
+const MORE_ROUTES = ["/walk-in", "/vehicle-history", "/report-incident"];
 
 export default function Layout({ title, children }: { title: string; children: ReactNode }) {
   const { auth, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
+  const onMoreRoute = MORE_ROUTES.includes(location.pathname);
 
   function handleLogout() {
     logout();
     navigate("/");
+  }
+
+  function goTo(path: string) {
+    setMoreOpen(false);
+    navigate(path);
   }
 
   return (
@@ -30,6 +40,27 @@ export default function Layout({ title, children }: { title: string; children: R
         </div>
       </header>
       <main>{children}</main>
+
+      {moreOpen && (
+        <>
+          <div className="nav-sheet-backdrop" onClick={() => setMoreOpen(false)} />
+          <div className="nav-sheet">
+            <button type="button" className="nav-sheet-item" onClick={() => goTo("/walk-in")}>
+              Walk-in
+            </button>
+            <button type="button" className="nav-sheet-item" onClick={() => goTo("/vehicle-history")}>
+              Vehicles
+            </button>
+            <button type="button" className="nav-sheet-item" onClick={() => goTo("/report-incident")}>
+              Incident
+            </button>
+            <button type="button" className="nav-sheet-cancel" onClick={() => setMoreOpen(false)}>
+              Cancel
+            </button>
+          </div>
+        </>
+      )}
+
       <nav className="bottom-nav">
         <NavLink to="/clock" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Clock
@@ -37,21 +68,19 @@ export default function Layout({ title, children }: { title: string; children: R
         <NavLink to="/checkin" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Check in
         </NavLink>
-        <NavLink to="/walk-in" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
-          Walk-in
-        </NavLink>
         <NavLink to="/scan" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Scan
         </NavLink>
         <NavLink to="/occupancy" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Occupancy
         </NavLink>
-        <NavLink to="/vehicle-history" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
-          Vehicles
-        </NavLink>
-        <NavLink to="/report-incident" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
-          Incident
-        </NavLink>
+        <button
+          type="button"
+          className={onMoreRoute ? "nav-item active" : "nav-item"}
+          onClick={() => setMoreOpen(true)}
+        >
+          More
+        </button>
       </nav>
     </div>
   );
