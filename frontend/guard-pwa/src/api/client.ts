@@ -1,6 +1,12 @@
 import type { ApiErrorBody } from "./types";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
+// Relative by default (same-origin /api/...) so this works whether the app
+// is opened via localhost or through a tunnel from another device — a
+// hardcoded http://localhost:8080 would silently fail on any device that
+// isn't the dev machine itself. The dev server proxies /api to the real
+// backend (see vite.config.ts); set VITE_API_BASE_URL only to point at a
+// backend that genuinely lives on a different origin than this app.
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   status: number;

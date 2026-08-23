@@ -7,5 +7,15 @@ export default defineConfig({
   server: {
     port: 5176,
     strictPort: true,
+    // Forwards API calls to the backend so the app can be reached through a
+    // tunnel (or any host other than localhost) from another device — the
+    // browser always calls same-origin /api/..., and only this dev server
+    // knows the backend actually lives on :8080. See src/api/client.ts.
+    proxy: {
+      "/api": {
+        target: "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
   },
 })
