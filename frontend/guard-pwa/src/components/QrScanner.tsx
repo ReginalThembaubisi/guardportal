@@ -38,37 +38,51 @@ export default function QrScanner({ onDecode }: { onDecode: (decodedText: string
       )
       .then(() => {
         if (!cancelled) setStarting(false);
+        return true;
       })
       .catch((err: unknown) => {
-        if (cancelled) return;
+        if (cancelled) return false;
         setStarting(false);
         setError(
           err instanceof Error
             ? `Camera unavailable: ${err.message}`
             : "Camera unavailable — allow camera access or use manual entry below.",
         );
+        return false;
       });
 
     return () => {
       cancelled = true;
-      // start() is async (it awaits camera permission), so React StrictMode's
-      // dev-only mount→unmount→remount can run this cleanup before the camera
-      // has actually attached. Chaining onto startPromise guarantees whatever
-      // did start gets torn down, however long it took to get there — a plain
-      // isScanning check here would miss anything still starting.
-      //
-      // Deliberately calling only stop(), never clear(): stop() surgically
-      // removes just *this* instance's own video/canvas/shaded-region nodes
-      // (see html5-qrcode's RenderedCameraImpl.close, which removeChild()s
-      // only its own surface element). clear() instead does
-      // element.innerHTML = "" on the shared container — if the StrictMode
-      // remount's own scanner has already attached its video by the time
-      // this runs, clear() would wipe that live feed out too, not just the
-      // stale one this instance owns.
-      startPromise.finally(() => {
-        if (scanner.isScanning) {
-          scanner.stop().catch(() => {});
-        }
+      // start() resolving does NOT mean the camera is actually live yet:
+      // html5-qrcode's isScanning flag only flips true once the <video>
+      // element's native "playing" event fires (see RenderedCameraImpl.
+      // setupSurface in the library source), which happens strictly later
+      // than start()'s own promise resolution. Checking isScanning right
+      // when startPromise settles was reliably too early — it read false,
+      // so stop() never ran, and a StrictMode-losing instance's camera (and
+      // its <video>) just kept running forever alongside the surviving
+      // one's. Poll for the real transition instead of assuming it already
+      // happened; give up after a few seconds if it never does (start()
+      // failed, or the camera genuinely never became scanning).
+      startPromise.then((started) => {
+        if (!started) return;
+        let attemptsLeft = 50;
+        const tryStop = () => {
+          if (scanner.isScanning) {
+            // Surgical: removes only this instance's own video/canvas/
+            // shaded-region nodes (RenderedCameraImpl.close only
+            // removeChild()s its own surface) — safe even if a sibling
+            // instance is still using the same container. Deliberately
+            // never calling clear(), which does element.innerHTML = ""
+            // on the whole shared container and would wipe a sibling's
+            // live video out too.
+            scanner.stop().catch(() => {});
+          } else if (attemptsLeft > 0) {
+            attemptsLeft -= 1;
+            setTimeout(tryStop, 100);
+          }
+        };
+        tryStop();
       });
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
