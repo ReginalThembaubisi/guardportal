@@ -45,7 +45,7 @@ public class VisitorEntryController {
     public VisitorEntryResponse walkIn(Authentication authentication, @Valid @RequestBody WalkInVisitorRequest request) {
         Long guardUserId = (Long) authentication.getPrincipal();
         VisitorEntry entry = visitorEntryService.checkInWalkIn(guardUserId, request);
-        return VisitorEntryResponse.from(entry, false);
+        return VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry));
     }
 
     @GetMapping("/{id}")

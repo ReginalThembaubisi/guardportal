@@ -29,6 +29,13 @@ export interface VisitorEntryResponse {
   createdAt: string;
 }
 
+export interface UnitResponse {
+  id: number;
+  propertyId: number;
+  unitNumber: string;
+  createdAt: string;
+}
+
 export interface OccupancyResponse {
   propertyId: number;
   totalOnSite: number;

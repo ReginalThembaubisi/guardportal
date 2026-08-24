@@ -12,6 +12,8 @@ public record WalkInVisitorRequest(
         VisitorCategory category,
         @Size(max = 500) String purpose,
         /** Destination unit, if the visitor names one — optional, same as visitor_entry.unit_id itself. */
-        Long unitId
+        Long unitId,
+        /** No QR code to carry a pre-registered vehicle, so a walk-in vehicle is captured the same way checkIn does. */
+        @Size(max = 20) String vehicleRegistration
 ) {
 }

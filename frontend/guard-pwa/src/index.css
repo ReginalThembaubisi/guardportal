@@ -251,6 +251,54 @@ form button[type="submit"]:disabled {
   font-weight: 700;
 }
 
+.unit-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.unit-picker input {
+  flex: 1;
+}
+
+.unit-picker-clear {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted);
+  padding: 0 14px;
+  font-family: var(--body);
+  font-size: 13px;
+}
+
+.unit-picker-results {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.unit-picker-results li + li {
+  border-top: 1px solid var(--rule);
+}
+
+.unit-picker-results button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: var(--surface-sunken);
+  color: var(--text);
+  padding: 10px 12px;
+  font-family: var(--body);
+  font-size: 14px;
+}
+
+.unit-picker-results button:active {
+  background: var(--surface);
+}
+
 .scanner-divider {
   text-align: center;
   color: var(--text-muted);

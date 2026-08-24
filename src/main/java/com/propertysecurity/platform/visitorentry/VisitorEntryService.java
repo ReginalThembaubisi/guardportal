@@ -127,9 +127,15 @@ public class VisitorEntryService {
             }
         }
 
+        Vehicle vehicle = null;
+        if (request.vehicleRegistration() != null && !request.vehicleRegistration().isBlank()) {
+            vehicle = vehicleService.findOrCreate(request.vehicleRegistration(), null, null, null, guardUserId);
+        }
+
         VisitorEntry entry = new VisitorEntry();
         entry.setProperty(guard.getProperty());
         entry.setUnit(unit);
+        entry.setVehicle(vehicle);
         entry.setVisitorName(request.visitorName());
         entry.setVisitorPhone(request.visitorPhone());
         entry.setCategory(request.category() != null ? request.category() : VisitorCategory.VISITOR);

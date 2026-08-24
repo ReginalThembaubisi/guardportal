@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { VisitorCategory, VisitorEntryResponse } from "../api/types";
+import type { UnitResponse, VisitorCategory, VisitorEntryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 
@@ -12,9 +12,38 @@ export default function WalkInPage() {
   const [visitorPhone, setVisitorPhone] = useState("");
   const [purpose, setPurpose] = useState("");
   const [category, setCategory] = useState<VisitorCategory>("VISITOR");
+  const [vehicleRegistration, setVehicleRegistration] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [lastEntry, setLastEntry] = useState<VisitorEntryResponse | null>(null);
   const [busy, setBusy] = useState(false);
+
+  const [units, setUnits] = useState<UnitResponse[]>([]);
+  const [unitQuery, setUnitQuery] = useState("");
+  const [selectedUnit, setSelectedUnit] = useState<UnitResponse | null>(null);
+
+  useEffect(() => {
+    if (!auth || auth.propertyId === null) return;
+    apiFetch<UnitResponse[]>(`/api/v1/properties/${auth.propertyId}/units`, { token: auth.token })
+      .then(setUnits)
+      .catch(() => {
+        // Non-fatal — the visitor can still be checked in without a unit link.
+      });
+  }, [auth]);
+
+  const unitMatches =
+    selectedUnit || unitQuery.trim() === ""
+      ? []
+      : units.filter((u) => u.unitNumber.toLowerCase().includes(unitQuery.trim().toLowerCase())).slice(0, 8);
+
+  function pickUnit(unit: UnitResponse) {
+    setSelectedUnit(unit);
+    setUnitQuery(unit.unitNumber);
+  }
+
+  function clearUnit() {
+    setSelectedUnit(null);
+    setUnitQuery("");
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -30,6 +59,8 @@ export default function WalkInPage() {
           visitorPhone: visitorPhone.trim() || undefined,
           category,
           purpose: purpose.trim() || undefined,
+          unitId: selectedUnit?.id,
+          vehicleRegistration: vehicleRegistration.trim() || undefined,
         },
       });
       setLastEntry(entry);
@@ -38,6 +69,8 @@ export default function WalkInPage() {
       setVisitorPhone("");
       setPurpose("");
       setCategory("VISITOR");
+      setVehicleRegistration("");
+      clearUnit();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Walk-in check-in failed");
     } finally {
@@ -81,6 +114,45 @@ export default function WalkInPage() {
           </select>
         </label>
         <label>
+          Vehicle registration (optional)
+          <input
+            type="text"
+            value={vehicleRegistration}
+            onChange={(e) => setVehicleRegistration(e.target.value.toUpperCase())}
+            placeholder="e.g. CA123456"
+          />
+        </label>
+        <label>
+          Visiting which unit? (optional)
+          <div className="unit-picker">
+            <input
+              type="text"
+              value={unitQuery}
+              onChange={(e) => {
+                setSelectedUnit(null);
+                setUnitQuery(e.target.value);
+              }}
+              placeholder="Type a unit number, e.g. 12"
+            />
+            {selectedUnit && (
+              <button type="button" className="unit-picker-clear" onClick={clearUnit}>
+                Clear
+              </button>
+            )}
+          </div>
+          {unitMatches.length > 0 && (
+            <ul className="unit-picker-results">
+              {unitMatches.map((u) => (
+                <li key={u.id}>
+                  <button type="button" onClick={() => pickUnit(u)}>
+                    Unit {u.unitNumber}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </label>
+        <label>
           Purpose (optional)
           <input
             type="text"
@@ -100,6 +172,8 @@ export default function WalkInPage() {
           <p className="checkin-visitor-name">{lastEntry.visitorName}</p>
           <p className="entry-meta">
             {lastEntry.category}
+            {lastEntry.vehicleRegistration && ` · ${lastEntry.vehicleRegistration}`}
+            {lastEntry.unitId && ` · Unit ${units.find((u) => u.id === lastEntry.unitId)?.unitNumber ?? lastEntry.unitId}`}
             {lastEntry.notes && ` · ${lastEntry.notes}`}
             {" · "}
             {new Date(lastEntry.enteredAt).toLocaleTimeString()}

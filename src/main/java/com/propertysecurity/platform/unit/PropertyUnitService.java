@@ -2,6 +2,8 @@ package com.propertysecurity.platform.unit;
 
 import com.propertysecurity.platform.exception.ConflictException;
 import com.propertysecurity.platform.exception.ResourceNotFoundException;
+import com.propertysecurity.platform.guard.Guard;
+import com.propertysecurity.platform.guard.GuardRepository;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.property.PropertyRepository;
 import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ public class PropertyUnitService {
     private final PropertyUnitRepository unitRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyManagerRepository propertyManagerRepository;
+    private final GuardRepository guardRepository;
 
     public PropertyUnit create(Long propertyId, UnitRequest request) {
         Property property = propertyRepository.findByIdAndDeletedAtIsNull(propertyId)
@@ -67,12 +71,21 @@ public class PropertyUnitService {
     }
 
     /**
-     * Same idiom as VisitorEntryService.assertCanAccessProperty: a caller
-     * with no PropertyManager rows at all (i.e. ADMIN, the only other role
-     * that reaches this) is unrestricted; a caller with any PropertyManager
-     * rows must have one matching this property.
+     * Same idiom as VisitorEntryService.assertCanAccessProperty: a guard is
+     * restricted to their own assigned property; a caller with no
+     * PropertyManager rows at all (i.e. ADMIN, the only other role that
+     * reaches this) is unrestricted; a caller with any PropertyManager rows
+     * must have one matching this property.
      */
     private void assertCanAccessProperty(Long callerUserId, Long propertyId) {
+        Optional<Guard> guard = guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (guard.isPresent()) {
+            if (!guard.get().getProperty().getId().equals(propertyId)) {
+                throw new AccessDeniedException("This property is not yours");
+            }
+            return;
+        }
+
         boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
         if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
             throw new AccessDeniedException("This property is not yours");
