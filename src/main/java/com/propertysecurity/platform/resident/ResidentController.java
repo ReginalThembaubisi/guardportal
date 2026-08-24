@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/residents")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'CLIENT', 'ADMIN')")
 public class ResidentController {
 
     private final ResidentService residentService;
@@ -34,19 +34,23 @@ public class ResidentController {
         return ResidentResponse.from(residentService.create(callerUserId, request));
     }
 
+    /** Scoped to the caller's own properties (manager or client); unrestricted for ADMIN. */
     @GetMapping
-    public List<ResidentResponse> listAll() {
-        return residentService.listAll().stream().map(ResidentResponse::from).toList();
+    public List<ResidentResponse> list(Authentication authentication) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return residentService.listForCaller(callerUserId).stream().map(ResidentResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    public ResidentResponse get(@PathVariable Long id) {
-        return ResidentResponse.from(residentService.get(id));
+    public ResidentResponse get(Authentication authentication, @PathVariable Long id) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return ResidentResponse.from(residentService.getForCaller(callerUserId, id));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        residentService.softDelete(id);
+    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable Long id) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        residentService.softDeleteForCaller(callerUserId, id);
         return ResponseEntity.noContent().build();
     }
 }

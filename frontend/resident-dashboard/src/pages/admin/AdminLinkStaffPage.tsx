@@ -4,7 +4,13 @@ import type { PropertyResponse, UserResponse } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import Layout from "../../components/Layout";
 
-type LinkRole = "PROPERTY_MANAGER" | "SUPERVISOR";
+type LinkRole = "PROPERTY_MANAGER" | "SUPERVISOR" | "CLIENT";
+
+const LINK_PATHS: Record<LinkRole, string> = {
+  PROPERTY_MANAGER: "/api/v1/property-managers",
+  SUPERVISOR: "/api/v1/property-supervisors",
+  CLIENT: "/api/v1/property-clients",
+};
 
 export default function AdminLinkStaffPage() {
   const { auth } = useAuth();
@@ -44,8 +50,7 @@ export default function AdminLinkStaffPage() {
     setSuccess(null);
     setBusy(true);
     try {
-      const path = linkRole === "PROPERTY_MANAGER" ? "/api/v1/property-managers" : "/api/v1/property-supervisors";
-      await apiFetch(path, {
+      await apiFetch(LINK_PATHS[linkRole], {
         method: "POST",
         token: auth.token,
         body: { userId: selectedUserId, propertyId: selectedPropertyId },
@@ -74,6 +79,7 @@ export default function AdminLinkStaffPage() {
             <select value={linkRole} onChange={(e) => setLinkRole(e.target.value as LinkRole)}>
               <option value="PROPERTY_MANAGER">PROPERTY_MANAGER</option>
               <option value="SUPERVISOR">SUPERVISOR</option>
+              <option value="CLIENT">CLIENT</option>
             </select>
           </label>
 

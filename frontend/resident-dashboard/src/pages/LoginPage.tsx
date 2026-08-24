@@ -22,6 +22,8 @@ export default function LoginPage() {
       navigate("/incidents");
     } else if (response.roles.includes("ADMIN")) {
       navigate("/admin/properties");
+    } else if (response.roles.includes("CLIENT")) {
+      navigate("/residents");
     } else {
       navigate("/");
     }

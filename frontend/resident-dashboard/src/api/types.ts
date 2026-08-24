@@ -66,6 +66,13 @@ export interface PropertyManagerResponse {
   propertyName: string;
 }
 
+export interface PropertyClientResponse {
+  id: number;
+  userId: number;
+  propertyId: number;
+  propertyName: string;
+}
+
 export interface UnitResponse {
   id: number;
   propertyId: number;
