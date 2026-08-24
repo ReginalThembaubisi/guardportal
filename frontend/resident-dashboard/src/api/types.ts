@@ -80,6 +80,27 @@ export interface UnitResponse {
   createdAt: string;
 }
 
+export interface ResidentImportRow {
+  unitNumber: string;
+  fullName: string;
+  phoneNumber: string;
+  email?: string;
+}
+
+export interface ResidentImportResultRow {
+  rowNumber: number;
+  unitNumber: string;
+  fullName: string;
+  created: boolean;
+  reason: string | null;
+}
+
+export interface ResidentImportResponse {
+  createdCount: number;
+  skippedCount: number;
+  rows: ResidentImportResultRow[];
+}
+
 export interface ResidentResponse {
   id: number;
   userId: number;

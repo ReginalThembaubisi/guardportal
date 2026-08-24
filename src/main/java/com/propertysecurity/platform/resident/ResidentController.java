@@ -1,5 +1,7 @@
 package com.propertysecurity.platform.resident;
 
+import com.propertysecurity.platform.resident.dto.ResidentImportRequest;
+import com.propertysecurity.platform.resident.dto.ResidentImportResponse;
 import com.propertysecurity.platform.resident.dto.ResidentRequest;
 import com.propertysecurity.platform.resident.dto.ResidentResponse;
 import jakarta.validation.Valid;
@@ -32,6 +34,17 @@ public class ResidentController {
     public ResidentResponse create(Authentication authentication, @Valid @RequestBody ResidentRequest request) {
         Long callerUserId = (Long) authentication.getPrincipal();
         return ResidentResponse.from(residentService.create(callerUserId, request));
+    }
+
+    /**
+     * Bulk onboarding — see ResidentService.importResidents. Never fails the
+     * whole batch over one bad row; the response reports each row's outcome.
+     */
+    @PostMapping("/import")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResidentImportResponse bulkImport(Authentication authentication, @Valid @RequestBody ResidentImportRequest request) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return residentService.importResidents(callerUserId, request);
     }
 
     /** Scoped to the caller's own properties (manager or client); unrestricted for ADMIN. */

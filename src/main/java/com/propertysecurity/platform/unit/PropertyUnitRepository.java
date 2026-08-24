@@ -12,4 +12,6 @@ public interface PropertyUnitRepository extends JpaRepository<PropertyUnit, Long
     Optional<PropertyUnit> findByIdAndDeletedAtIsNull(Long id);
 
     boolean existsByProperty_IdAndUnitNumberAndDeletedAtIsNull(Long propertyId, String unitNumber);
+
+    Optional<PropertyUnit> findByProperty_IdAndUnitNumberAndDeletedAtIsNull(Long propertyId, String unitNumber);
 }
