@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,4 +36,13 @@ public interface VisitorEntryRepository extends JpaRepository<VisitorEntry, Long
     // A resident's own visitor history — entries from invitations they personally created.
     @Query("select ve from VisitorEntry ve left join fetch ve.vehicle where ve.invitation.resident.id = :residentId order by ve.enteredAt desc")
     List<VisitorEntry> findAllByInvitation_Resident_IdOrderByEnteredAtDesc(@Param("residentId") Long residentId);
+
+    // Incident-investigation lookup: "who visited on [day/range]" — the
+    // actual paper-register equivalent (flip to a date, read the page),
+    // which nothing else in the system offers. left join fetch ve.unit too
+    // (unlike the other queries here) since the history view displays the
+    // unit number directly rather than just an id.
+    @Query("select ve from VisitorEntry ve left join fetch ve.vehicle left join fetch ve.unit where ve.property.id = :propertyId and ve.enteredAt >= :from and ve.enteredAt < :to order by ve.enteredAt desc")
+    List<VisitorEntry> findAllByProperty_IdAndEnteredAtBetween(
+            @Param("propertyId") Long propertyId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

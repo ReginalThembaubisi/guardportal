@@ -635,6 +635,12 @@ form button[type="submit"]:disabled {
   margin-bottom: 20px;
 }
 
+.date-range-picker {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 /* Patrol route builder */
 .route-builder {
   display: grid;

@@ -11,18 +11,21 @@ import com.propertysecurity.platform.invitation.InvitationRepository;
 import com.propertysecurity.platform.invitation.InvitationStatus;
 import com.propertysecurity.platform.property.PropertyRepository;
 import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
+import com.propertysecurity.platform.propertysupervisor.PropertySupervisorRepository;
 import com.propertysecurity.platform.resident.Resident;
 import com.propertysecurity.platform.resident.ResidentRepository;
 import com.propertysecurity.platform.unit.PropertyUnit;
 import com.propertysecurity.platform.unit.PropertyUnitRepository;
 import com.propertysecurity.platform.vehicle.Vehicle;
 import com.propertysecurity.platform.vehicle.VehicleService;
+import com.propertysecurity.platform.visitorentry.dto.VisitorHistoryEntryResponse;
 import com.propertysecurity.platform.visitorentry.dto.WalkInVisitorRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -41,6 +44,7 @@ public class VisitorEntryService {
     private final GuardRepository guardRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyManagerRepository propertyManagerRepository;
+    private final PropertySupervisorRepository propertySupervisorRepository;
     private final ResidentRepository residentRepository;
     private final PropertyUnitRepository propertyUnitRepository;
     private final VehicleService vehicleService;
@@ -211,6 +215,47 @@ public class VisitorEntryService {
             byCategory.get(entry.getCategory()).add(entry);
         }
         return byCategory;
+    }
+
+    /**
+     * Incident-investigation lookup: "who visited on [day/range]" — the
+     * literal digital equivalent of flipping a paper register to a date.
+     * Deliberately not GUARD-facing (guards get current occupancy, not a
+     * history browser) and deliberately not CLIENT-facing (an open-ended
+     * per-visitor browsing tool for a property owner is a real privacy
+     * concern distinct from a scoped incident lookup — see PRODUCT.md/this
+     * conversation's decision). Scoped like IncidentService.
+     * assertCanAccessProperty: a property manager to properties they
+     * manage, a supervisor to properties they supervise, ADMIN unrestricted.
+     */
+    @Transactional(readOnly = true)
+    public List<VisitorEntry> historyForDateRange(Long callerUserId, Long propertyId, LocalDate from, LocalDate to) {
+        if (!propertyRepository.existsById(propertyId)) {
+            throw new ResourceNotFoundException("Property " + propertyId + " not found");
+        }
+        if (to.isBefore(from)) {
+            throw new BadRequestException("The end date can't be before the start date");
+        }
+        assertCanAccessPropertyForHistory(callerUserId, propertyId);
+
+        LocalDateTime fromInclusive = from.atStartOfDay();
+        LocalDateTime toExclusive = to.plusDays(1).atStartOfDay();
+        return visitorEntryRepository.findAllByProperty_IdAndEnteredAtBetween(propertyId, fromInclusive, toExclusive);
+    }
+
+    private void assertCanAccessPropertyForHistory(Long callerUserId, Long propertyId) {
+        boolean isAnyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        boolean isAnySupervisor = propertySupervisorRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (!isAnyManager && !isAnySupervisor) {
+            return; // ADMIN — unrestricted
+        }
+        boolean managesThis = isAnyManager
+                && propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId);
+        boolean supervisesThis = isAnySupervisor
+                && propertySupervisorRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId);
+        if (!managesThis && !supervisesThis) {
+            throw new AccessDeniedException("This property is not yours");
+        }
     }
 
     /**

@@ -13,6 +13,7 @@ import PatrolStatusPage from "./pages/PatrolStatusPage";
 import CreateGuardPage from "./pages/CreateGuardPage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
 import IncidentsPage from "./pages/IncidentsPage";
+import VisitorHistoryPage from "./pages/VisitorHistoryPage";
 import AdminPropertiesPage from "./pages/admin/AdminPropertiesPage";
 import AdminUnitsPage from "./pages/admin/AdminUnitsPage";
 import AdminStaffPage from "./pages/admin/AdminStaffPage";
@@ -125,6 +126,14 @@ export default function App() {
         element={
           <ProtectedRoute role={["PROPERTY_MANAGER", "SUPERVISOR"]}>
             <IncidentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/visitor-history"
+        element={
+          <ProtectedRoute role={["PROPERTY_MANAGER", "SUPERVISOR"]}>
+            <VisitorHistoryPage />
           </ProtectedRoute>
         }
       />

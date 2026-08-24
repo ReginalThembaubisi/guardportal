@@ -65,6 +65,9 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Incidents
           </NavLink>
+          <NavLink to="/visitor-history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Visitor History
+          </NavLink>
         </nav>
       )}
       {hasRole("CLIENT") && (
@@ -78,6 +81,9 @@ export default function Layout({ title, children }: { title: string; children: R
         <nav className="top-nav">
           <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Incidents
+          </NavLink>
+          <NavLink to="/visitor-history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Visitor History
           </NavLink>
         </nav>
       )}
