@@ -85,6 +85,23 @@ function parseResidentCsv(text: string): ResidentImportRow[] {
   }));
 }
 
+const PAGE_SIZE = 25;
+
+const CSV_TEMPLATE = `unitNumber,fullName,phoneNumber,email
+101,Jane Student,+27821234567,jane@example.com
+102,John Student,+27821234568,
+`;
+
+function downloadCsvTemplate() {
+  const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "resident-import-template.csv";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function ClientResidentsPage() {
   const { auth } = useAuth();
   const [properties, setProperties] = useState<PropertyClientResponse[] | null>(null);
@@ -104,6 +121,7 @@ export default function ClientResidentsPage() {
   const [importResult, setImportResult] = useState<ResidentImportResponse | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (!auth) return;
@@ -126,6 +144,7 @@ export default function ClientResidentsPage() {
   }
 
   useEffect(loadUnits, [auth, selectedPropertyId]);
+  useEffect(() => setPage(1), [selectedPropertyId]);
 
   function loadResidents() {
     if (!auth) return;
@@ -152,6 +171,15 @@ export default function ClientResidentsPage() {
           (r.email ?? "").toLowerCase().includes(trimmedQuery),
       )
     : residentsForSelectedProperty;
+
+  const totalPages = Math.max(1, Math.ceil(visibleResidents.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pagedResidents = visibleResidents.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  function updateSearch(value: string) {
+    setSearchQuery(value);
+    setPage(1);
+  }
 
   async function submitAdd(e: FormEvent) {
     e.preventDefault();
@@ -250,7 +278,7 @@ export default function ClientResidentsPage() {
             <input
               type="search"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => updateSearch(e.target.value)}
               placeholder="Search by name, unit, phone, or email"
             />
           )}
@@ -259,44 +287,62 @@ export default function ClientResidentsPage() {
           ) : visibleResidents.length === 0 ? (
             <p className="empty">No residents match "{searchQuery.trim()}".</p>
           ) : (
-            <table className="entries-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Unit</th>
-                  <th>Phone</th>
-                  <th>Email</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {visibleResidents.map((r) => (
-                  <tr key={r.id}>
-                    <td>{r.fullName}</td>
-                    <td>{r.unitNumber}</td>
-                    <td>{r.phoneNumber}</td>
-                    <td>{r.email ?? "—"}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="link-button"
-                        onClick={() => removeResident(r.id)}
-                        disabled={removingId === r.id}
-                      >
-                        {removingId === r.id ? "Removing…" : "Remove"}
-                      </button>
-                    </td>
+            <>
+              <table className="entries-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Unit</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {pagedResidents.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.fullName}</td>
+                      <td>{r.unitNumber}</td>
+                      <td>{r.phoneNumber}</td>
+                      <td>{r.email ?? "—"}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => removeResident(r.id)}
+                          disabled={removingId === r.id}
+                        >
+                          {removingId === r.id ? "Removing…" : "Remove"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {totalPages > 1 && (
+                <div className="pagination">
+                  <button type="button" onClick={() => setPage((p) => p - 1)} disabled={currentPage <= 1}>
+                    Previous
+                  </button>
+                  <span className="dev-hint">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button type="button" onClick={() => setPage((p) => p + 1)} disabled={currentPage >= totalPages}>
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           )}
 
           <h2 style={{ marginTop: 24 }}>Bulk import</h2>
           <p className="dev-hint">
             For onboarding an existing residence at once. CSV with a header row, then one row per
             resident: unit number, full name, phone number, email (email may be left blank). A unit
-            number that doesn't exist yet is created automatically.
+            number that doesn't exist yet is created automatically.{" "}
+            <button type="button" className="link-button" onClick={downloadCsvTemplate}>
+              Download a template
+            </button>
           </p>
           <input type="file" accept=".csv,text/csv" onChange={handleCsvSelected} disabled={importBusy} />
           {importBusy && <p className="dev-hint">Importing…</p>}

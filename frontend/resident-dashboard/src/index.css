@@ -400,6 +400,13 @@ form button[type="submit"]:disabled {
   border-bottom: none;
 }
 
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .badge {
   display: inline-block;
   font-family: var(--display);
