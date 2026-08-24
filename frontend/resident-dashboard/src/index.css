@@ -641,6 +641,13 @@ form button[type="submit"]:disabled {
   margin-bottom: 16px;
 }
 
+.location-map-picker {
+  height: 320px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+
 /* Patrol route builder */
 .route-builder {
   display: grid;

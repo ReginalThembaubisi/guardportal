@@ -3,6 +3,7 @@ import { apiFetch, ApiError } from "../api/client";
 import type { CheckpointResponse, PropertyManagerResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import LocationMapPicker from "../components/LocationMapPicker";
 
 export default function CreateCheckpointPage() {
   const { auth } = useAuth();
@@ -107,6 +108,16 @@ export default function CreateCheckpointPage() {
           <button type="button" className="refresh-button" onClick={useCurrentLocation} disabled={locating}>
             {locating ? "Getting location…" : "Use my current location"}
           </button>
+
+          <p className="dev-hint">Not standing at the spot? Click the map to drop a pin instead.</p>
+          <LocationMapPicker
+            latitude={latitude.trim() ? Number(latitude) : null}
+            longitude={longitude.trim() ? Number(longitude) : null}
+            onPick={(lat, lng) => {
+              setLatitude(lat.toFixed(7));
+              setLongitude(lng.toFixed(7));
+            }}
+          />
 
           <label>
             Latitude
