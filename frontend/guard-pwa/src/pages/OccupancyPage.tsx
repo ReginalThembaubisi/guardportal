@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { OccupancyResponse, VisitorCategory } from "../api/types";
+import type { OccupancyResponse, VisitorCategory, VisitorCheckOutResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import Seal from "../components/Seal";
 
 const CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STAFF"];
 
@@ -12,6 +13,7 @@ export default function OccupancyPage() {
   const [occupancy, setOccupancy] = useState<OccupancyResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exitingId, setExitingId] = useState<number | null>(null);
+  const [lastCheckOut, setLastCheckOut] = useState<VisitorCheckOutResponse | null>(null);
 
   const loadOccupancy = useCallback(() => {
     if (!auth || auth.propertyId === null) return;
@@ -38,7 +40,11 @@ export default function OccupancyPage() {
     setError(null);
     setExitingId(entryId);
     try {
-      await apiFetch(`/api/v1/visitor-entries/${entryId}/exit`, { method: "POST", token: auth.token });
+      const result = await apiFetch<VisitorCheckOutResponse>(`/api/v1/visitor-entries/${entryId}/exit`, {
+        method: "POST",
+        token: auth.token,
+      });
+      setLastCheckOut(result);
       loadOccupancy();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to check visitor out");
@@ -74,6 +80,34 @@ export default function OccupancyPage() {
   return (
     <Layout title="Occupancy">
       {error && <p className="error">{error}</p>}
+
+      {lastCheckOut && (
+        <div className="checkin-result">
+          <h2>Checked out</h2>
+          <p className="checkin-visitor-name">{lastCheckOut.visitorName}</p>
+          {lastCheckOut.visitingResidentNames && (
+            <p className="checkin-visiting">Was visiting {lastCheckOut.visitingResidentNames}</p>
+          )}
+          <p className="entry-meta">
+            {lastCheckOut.vehicleRegistration && (
+              <>
+                {lastCheckOut.vehicleRegistration}
+                {lastCheckOut.vehicleRecognized && (
+                  <>
+                    {" "}
+                    <Seal state="cleared">
+                      Recognized{lastCheckOut.recognizedVehicleOwnerName && ` — ${lastCheckOut.recognizedVehicleOwnerName}'s`}
+                    </Seal>
+                  </>
+                )}
+                {" · "}
+              </>
+            )}
+            In {new Date(lastCheckOut.enteredAt).toLocaleTimeString()} · out{" "}
+            {new Date(lastCheckOut.exitedAt).toLocaleTimeString()}
+          </p>
+        </div>
+      )}
 
       {occupancy && (
         <>

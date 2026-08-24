@@ -184,21 +184,33 @@ public class VisitorEntryService {
         auditLogService.record("visitor_entry", saved.getId(), AuditAction.CREATE,
                 guardUserId, null, snapshot(saved));
 
-        String visitingResidentNames = unit == null
-                ? null
-                : String.join(", ", residentRepository.findAllByUnit_IdAndDeletedAtIsNull(unit.getId()).stream()
-                        .map(r -> r.getUser().getFullName())
-                        .toList());
-        if (visitingResidentNames != null && visitingResidentNames.isEmpty()) {
-            visitingResidentNames = null; // unit picked, but nobody registered as living there yet
-        }
-
         boolean recognized = vehicle != null && vehicleService.isRecognized(vehicle.getId());
         String recognizedVehicleOwnerName = recognized
                 ? String.join(", ", vehicleService.recognizedOwnerNames(vehicle.getId()))
                 : null;
 
-        return new WalkInResult(saved, recognized, visitingResidentNames, recognizedVehicleOwnerName);
+        return new WalkInResult(saved, recognized, visitingResidentNamesFor(saved), recognizedVehicleOwnerName);
+    }
+
+    /**
+     * Who a visitor_entry is "for", regardless of how they got checked in:
+     * a QR/code entry has exactly one inviting resident; a walk-in with a
+     * picked unit can have several (family members etc.) or none yet (a
+     * unit added but nobody's registered as living there). Shared by
+     * checkInWalkIn and checkOut so a checkout confirmation can name the
+     * same resident(s) a walk-in's own check-in confirmation did.
+     */
+    private String visitingResidentNamesFor(VisitorEntry entry) {
+        if (entry.getInvitation() != null) {
+            return entry.getInvitation().getResident().getUser().getFullName();
+        }
+        if (entry.getUnit() == null) {
+            return null;
+        }
+        String names = String.join(", ", residentRepository.findAllByUnit_IdAndDeletedAtIsNull(entry.getUnit().getId()).stream()
+                .map(r -> r.getUser().getFullName())
+                .toList());
+        return names.isEmpty() ? null : names;
     }
 
     /**
@@ -305,13 +317,21 @@ public class VisitorEntryService {
         }
     }
 
+    /** Same visitingResidentNames/recognizedVehicleOwnerName reasoning as CheckInResult/WalkInResult. */
+    public record CheckOutResult(
+            VisitorEntry entry,
+            boolean vehicleRecognized,
+            String visitingResidentNames,
+            String recognizedVehicleOwnerName) {
+    }
+
     /**
      * Checks a visitor out: server-stamps exited_at and records which guard
      * processed the exit. Same property-match rule as check-in — a guard
      * can only exit visitors at their own property. Writes an audit_log
      * UPDATE row (CLAUDE.md rule 2).
      */
-    public VisitorEntry checkOut(Long guardUserId, Long entryId) {
+    public CheckOutResult checkOut(Long guardUserId, Long entryId) {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
 
@@ -333,7 +353,12 @@ public class VisitorEntryService {
                 Map.of("exitedAt", "null"),
                 Map.of("exitedAt", saved.getExitedAt(), "exitProcessedByGuardId", guard.getId()));
 
-        return saved;
+        boolean recognized = isVehicleRecognized(saved);
+        String recognizedVehicleOwnerName = recognized
+                ? String.join(", ", vehicleService.recognizedOwnerNames(saved.getVehicle().getId()))
+                : null;
+
+        return new CheckOutResult(saved, recognized, visitingResidentNamesFor(saved), recognizedVehicleOwnerName);
     }
 
     private void validateStatus(Invitation invitation) {

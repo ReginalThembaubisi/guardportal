@@ -3,6 +3,7 @@ package com.propertysecurity.platform.visitorentry;
 import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.visitorentry.dto.ScanRequest;
 import com.propertysecurity.platform.visitorentry.dto.VisitorCheckInResponse;
+import com.propertysecurity.platform.visitorentry.dto.VisitorCheckOutResponse;
 import com.propertysecurity.platform.visitorentry.dto.VisitorEntryResponse;
 import com.propertysecurity.platform.visitorentry.dto.VisitorWalkInResponse;
 import com.propertysecurity.platform.visitorentry.dto.WalkInVisitorRequest;
@@ -59,9 +60,9 @@ public class VisitorEntryController {
 
     /** Guard-facing check-out: server-stamps exited_at on the entry. */
     @PostMapping("/{id}/exit")
-    public VisitorEntryResponse exit(Authentication authentication, @PathVariable Long id) {
+    public VisitorCheckOutResponse exit(Authentication authentication, @PathVariable Long id) {
         Long guardUserId = (Long) authentication.getPrincipal();
-        VisitorEntry entry = visitorEntryService.checkOut(guardUserId, id);
-        return VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry));
+        VisitorEntryService.CheckOutResult result = visitorEntryService.checkOut(guardUserId, id);
+        return VisitorCheckOutResponse.from(result);
     }
 }
