@@ -1,6 +1,6 @@
 package com.propertysecurity.platform.visitorentry;
 
-import com.propertysecurity.platform.visitorentry.dto.VisitorEntryResponse;
+import com.propertysecurity.platform.visitorentry.dto.VisitorHistoryForResidentResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -24,10 +24,13 @@ public class MyVisitorEntriesController {
     private final VisitorEntryService visitorEntryService;
 
     @GetMapping("/mine")
-    public List<VisitorEntryResponse> mine(Authentication authentication) {
+    public List<VisitorHistoryForResidentResponse> mine(Authentication authentication) {
         Long residentUserId = (Long) authentication.getPrincipal();
         return visitorEntryService.myHistory(residentUserId).stream()
-                .map(entry -> VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry)))
+                .map(entry -> VisitorHistoryForResidentResponse.from(
+                        entry,
+                        visitorEntryService.isVehicleRecognized(entry),
+                        visitorEntryService.recognizedVehicleOwnerName(entry)))
                 .toList();
     }
 }

@@ -118,10 +118,15 @@ public class VisitorEntryService {
                 guardUserId, null, snapshot(saved));
 
         boolean recognized = vehicle != null && vehicleService.isRecognized(vehicle.getId());
-        String recognizedVehicleOwnerName = recognized
-                ? String.join(", ", vehicleService.recognizedOwnerNames(vehicle.getId()))
-                : null;
-        return new CheckInResult(saved, recognized, visitingResidentName, recognizedVehicleOwnerName);
+        return new CheckInResult(saved, recognized, visitingResidentName, recognizedOwnerNameFor(vehicle));
+    }
+
+    /** Shared by CheckInResult/WalkInResult/CheckOutResult/myHistory — null unless the vehicle is actually recognized. */
+    private String recognizedOwnerNameFor(Vehicle vehicle) {
+        if (vehicle == null || !vehicleService.isRecognized(vehicle.getId())) {
+            return null;
+        }
+        return String.join(", ", vehicleService.recognizedOwnerNames(vehicle.getId()));
     }
 
     /**
@@ -185,11 +190,7 @@ public class VisitorEntryService {
                 guardUserId, null, snapshot(saved));
 
         boolean recognized = vehicle != null && vehicleService.isRecognized(vehicle.getId());
-        String recognizedVehicleOwnerName = recognized
-                ? String.join(", ", vehicleService.recognizedOwnerNames(vehicle.getId()))
-                : null;
-
-        return new WalkInResult(saved, recognized, visitingResidentNamesFor(saved), recognizedVehicleOwnerName);
+        return new WalkInResult(saved, recognized, visitingResidentNamesFor(saved), recognizedOwnerNameFor(vehicle));
     }
 
     /**
@@ -251,6 +252,11 @@ public class VisitorEntryService {
 
     public boolean isVehicleRecognized(VisitorEntry entry) {
         return entry.getVehicle() != null && vehicleService.isRecognized(entry.getVehicle().getId());
+    }
+
+    /** Public wrapper for controllers that don't otherwise have a reason to depend on VehicleService directly — see MyVisitorEntriesController. */
+    public String recognizedVehicleOwnerName(VisitorEntry entry) {
+        return recognizedOwnerNameFor(entry.getVehicle());
     }
 
     /**
@@ -354,11 +360,7 @@ public class VisitorEntryService {
                 Map.of("exitedAt", saved.getExitedAt(), "exitProcessedByGuardId", guard.getId()));
 
         boolean recognized = isVehicleRecognized(saved);
-        String recognizedVehicleOwnerName = recognized
-                ? String.join(", ", vehicleService.recognizedOwnerNames(saved.getVehicle().getId()))
-                : null;
-
-        return new CheckOutResult(saved, recognized, visitingResidentNamesFor(saved), recognizedVehicleOwnerName);
+        return new CheckOutResult(saved, recognized, visitingResidentNamesFor(saved), recognizedOwnerNameFor(saved.getVehicle()));
     }
 
     private void validateStatus(Invitation invitation) {

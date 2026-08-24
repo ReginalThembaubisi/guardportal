@@ -35,6 +35,17 @@ export interface VisitorEntryResponse {
   createdAt: string;
 }
 
+export interface VisitorHistoryForResidentResponse {
+  id: number;
+  visitorName: string;
+  category: VisitorCategory;
+  vehicleRegistration: string | null;
+  vehicleRecognized: boolean;
+  recognizedVehicleOwnerName: string | null;
+  enteredAt: string;
+  exitedAt: string | null;
+}
+
 export interface VisitorHistoryEntryResponse {
   id: number;
   visitorName: string;

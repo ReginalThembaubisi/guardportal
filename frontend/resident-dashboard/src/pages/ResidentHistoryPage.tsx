@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { VisitorEntryResponse } from "../api/types";
+import type { VisitorHistoryForResidentResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import Seal from "../components/Seal";
 
 export default function ResidentHistoryPage() {
   const { auth } = useAuth();
-  const [entries, setEntries] = useState<VisitorEntryResponse[] | null>(null);
+  const [entries, setEntries] = useState<VisitorHistoryForResidentResponse[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!auth) return;
-    apiFetch<VisitorEntryResponse[]>("/api/v1/visitor-entries/mine", { token: auth.token })
+    apiFetch<VisitorHistoryForResidentResponse[]>("/api/v1/visitor-entries/mine", { token: auth.token })
       .then(setEntries)
       .catch((err) => setError(err instanceof ApiError ? err.message : "Failed to load visitor history"));
   }, [auth]);
@@ -40,7 +41,12 @@ export default function ResidentHistoryPage() {
                 <td>
                   {entry.vehicleRegistration ?? "—"}
                   {entry.vehicleRegistration && entry.vehicleRecognized && (
-                    <span className="badge recognized"> recognized</span>
+                    <>
+                      {" "}
+                      <Seal state="cleared">
+                        Recognized{entry.recognizedVehicleOwnerName && ` — ${entry.recognizedVehicleOwnerName}'s`}
+                      </Seal>
+                    </>
                   )}
                 </td>
                 <td>{new Date(entry.enteredAt).toLocaleString()}</td>
