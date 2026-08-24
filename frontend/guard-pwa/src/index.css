@@ -277,6 +277,19 @@ form button[type="submit"]:disabled {
   min-height: 100vh;
 }
 
+/* Above phone width, the bottom tab bar (built for one-handed thumb reach
+   at a gate) stops making sense — there's no thumb-zone constraint on a
+   desktop-size screen, and a full-width bar just leaves the sides empty.
+   Switch to a left rail instead: same nav items, vertical, out of the way
+   of the reading column. */
+@media (min-width: 768px) {
+  .layout {
+    max-width: 640px;
+    margin: 0 0 0 208px;
+    padding: 20px 16px 40px;
+  }
+}
+
 .layout-header {
   display: flex;
   align-items: center;
@@ -340,6 +353,31 @@ form button[type="submit"]:disabled {
 .nav-item.active {
   color: var(--accent-strong);
   box-shadow: inset 0 2px 0 var(--accent-strong);
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    top: 0;
+    bottom: 0;
+    right: auto;
+    left: 0;
+    width: 208px;
+    max-width: none;
+    margin: 0;
+    flex-direction: column;
+    border-top: none;
+    border-right: 1px solid var(--rule);
+  }
+
+  .nav-item {
+    text-align: left;
+    padding: 16px 20px;
+    font-size: 13px;
+  }
+
+  .nav-item.active {
+    box-shadow: inset 2px 0 0 var(--accent-strong);
+  }
 }
 
 /* "More" sheet — the bottom nav only keeps the four most-reached-for
