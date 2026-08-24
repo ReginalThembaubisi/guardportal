@@ -93,13 +93,34 @@ const CSV_TEMPLATE = `unitNumber,fullName,phoneNumber,email
 `;
 
 function downloadCsvTemplate() {
-  const blob = new Blob([CSV_TEMPLATE], { type: "text/csv" });
+  downloadCsv(CSV_TEMPLATE, "resident-import-template.csv");
+}
+
+function downloadCsv(text: string, filename: string) {
+  const blob = new Blob([text], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "resident-import-template.csv";
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/** Quotes a field only when it needs it (contains a comma, quote, or newline) — matches parseCsvTable's "" escaping. */
+function toCsvField(value: string): string {
+  if (/[",\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/** Same column order as the import template, so an exported file can be re-imported unchanged. */
+function residentsToCsv(list: ResidentResponse[]): string {
+  const header = "unitNumber,fullName,phoneNumber,email";
+  const rows = list.map((r) =>
+    [r.unitNumber, r.fullName, r.phoneNumber, r.email ?? ""].map(toCsvField).join(","),
+  );
+  return [header, ...rows].join("\n") + "\n";
 }
 
 export default function ClientResidentsPage() {
@@ -275,12 +296,25 @@ export default function ClientResidentsPage() {
         <>
           <h2>Current residents ({residentsForSelectedProperty.length})</h2>
           {residentsForSelectedProperty.length > 0 && (
-            <input
-              type="search"
-              value={searchQuery}
-              onChange={(e) => updateSearch(e.target.value)}
-              placeholder="Search by name, unit, phone, or email"
-            />
+            <>
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => updateSearch(e.target.value)}
+                placeholder="Search by name, unit, phone, or email"
+              />
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => {
+                  const propertyName = properties?.find((p) => p.propertyId === selectedPropertyId)?.propertyName ?? "export";
+                  const safeName = propertyName.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+                  downloadCsv(residentsToCsv(visibleResidents), `residents-${safeName}.csv`);
+                }}
+              >
+                Export {trimmedQuery ? `${visibleResidents.length} matching` : "all"} to CSV
+              </button>
+            </>
           )}
           {residentsForSelectedProperty.length === 0 ? (
             <p className="empty">No residents on file for this property yet.</p>
