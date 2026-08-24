@@ -125,6 +125,21 @@ public class VisitorEntryService {
     }
 
     /**
+     * Same idea as CheckInResult: visitingResidentNames/
+     * recognizedVehicleOwnerName are plain Strings extracted while
+     * checkInWalkIn()'s transaction is still open, not navigable entities.
+     * visitingResidentNames is comma-joined and can be null (no unit picked,
+     * or a unit with no residents on file yet) — unlike a QR check-in's
+     * single inviting resident, a walk-in's unit can have more than one.
+     */
+    public record WalkInResult(
+            VisitorEntry entry,
+            boolean vehicleRecognized,
+            String visitingResidentNames,
+            String recognizedVehicleOwnerName) {
+    }
+
+    /**
      * Walk-in / unexpected visitor: no invitation code, so invitation stays
      * null (the schema's own documented meaning of that column — see
      * property_security_schema.sql). PENDING, not AUTO_APPROVED — unlike a
@@ -135,7 +150,7 @@ public class VisitorEntryService {
      * surfaced passively via occupancy/history (no invitationId) for now.
      * Audited the same as every other visitor_entry write (CLAUDE.md rule 2).
      */
-    public VisitorEntry checkInWalkIn(Long guardUserId, WalkInVisitorRequest request) {
+    public WalkInResult checkInWalkIn(Long guardUserId, WalkInVisitorRequest request) {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
 
@@ -168,7 +183,22 @@ public class VisitorEntryService {
         VisitorEntry saved = visitorEntryRepository.save(entry);
         auditLogService.record("visitor_entry", saved.getId(), AuditAction.CREATE,
                 guardUserId, null, snapshot(saved));
-        return saved;
+
+        String visitingResidentNames = unit == null
+                ? null
+                : String.join(", ", residentRepository.findAllByUnit_IdAndDeletedAtIsNull(unit.getId()).stream()
+                        .map(r -> r.getUser().getFullName())
+                        .toList());
+        if (visitingResidentNames != null && visitingResidentNames.isEmpty()) {
+            visitingResidentNames = null; // unit picked, but nobody registered as living there yet
+        }
+
+        boolean recognized = vehicle != null && vehicleService.isRecognized(vehicle.getId());
+        String recognizedVehicleOwnerName = recognized
+                ? String.join(", ", vehicleService.recognizedOwnerNames(vehicle.getId()))
+                : null;
+
+        return new WalkInResult(saved, recognized, visitingResidentNames, recognizedVehicleOwnerName);
     }
 
     /**

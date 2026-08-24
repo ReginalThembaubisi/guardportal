@@ -4,6 +4,7 @@ import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.visitorentry.dto.ScanRequest;
 import com.propertysecurity.platform.visitorentry.dto.VisitorCheckInResponse;
 import com.propertysecurity.platform.visitorentry.dto.VisitorEntryResponse;
+import com.propertysecurity.platform.visitorentry.dto.VisitorWalkInResponse;
 import com.propertysecurity.platform.visitorentry.dto.WalkInVisitorRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,10 +44,10 @@ public class VisitorEntryController {
     /** Walk-in / unexpected visitor — no invitation code, guard captures the details directly. */
     @PostMapping("/walk-in")
     @ResponseStatus(HttpStatus.CREATED)
-    public VisitorEntryResponse walkIn(Authentication authentication, @Valid @RequestBody WalkInVisitorRequest request) {
+    public VisitorWalkInResponse walkIn(Authentication authentication, @Valid @RequestBody WalkInVisitorRequest request) {
         Long guardUserId = (Long) authentication.getPrincipal();
-        VisitorEntry entry = visitorEntryService.checkInWalkIn(guardUserId, request);
-        return VisitorEntryResponse.from(entry, visitorEntryService.isVehicleRecognized(entry));
+        VisitorEntryService.WalkInResult result = visitorEntryService.checkInWalkIn(guardUserId, request);
+        return VisitorWalkInResponse.from(result);
     }
 
     @GetMapping("/{id}")

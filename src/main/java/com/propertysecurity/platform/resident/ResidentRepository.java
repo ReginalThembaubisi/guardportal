@@ -23,4 +23,10 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
     Optional<Resident> findByIdFetchUnitAndProperty(@Param("id") Long id);
 
     Optional<Resident> findByUser_IdAndDeletedAtIsNull(Long userId);
+
+    // Who to name as "visiting" on a walk-in that picked a unit — a unit can
+    // have more than one resident (family members etc.), unlike a
+    // QR-invitation check-in which always has exactly one inviting resident.
+    @Query("select r from Resident r join fetch r.user where r.unit.id = :unitId and r.deletedAt is null")
+    List<Resident> findAllByUnit_IdAndDeletedAtIsNull(@Param("unitId") Long unitId);
 }

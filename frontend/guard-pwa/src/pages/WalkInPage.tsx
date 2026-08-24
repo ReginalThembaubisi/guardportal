@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { UnitResponse, VisitorCategory, VisitorEntryResponse } from "../api/types";
+import type { UnitResponse, VisitorCategory, VisitorWalkInResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
+import Seal from "../components/Seal";
 
 const CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STAFF"];
 
@@ -14,7 +15,7 @@ export default function WalkInPage() {
   const [category, setCategory] = useState<VisitorCategory>("VISITOR");
   const [vehicleRegistration, setVehicleRegistration] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [lastEntry, setLastEntry] = useState<VisitorEntryResponse | null>(null);
+  const [lastEntry, setLastEntry] = useState<VisitorWalkInResponse | null>(null);
   const [busy, setBusy] = useState(false);
 
   const [units, setUnits] = useState<UnitResponse[]>([]);
@@ -51,7 +52,7 @@ export default function WalkInPage() {
     setError(null);
     setBusy(true);
     try {
-      const entry = await apiFetch<VisitorEntryResponse>("/api/v1/visitor-entries/walk-in", {
+      const entry = await apiFetch<VisitorWalkInResponse>("/api/v1/visitor-entries/walk-in", {
         method: "POST",
         token: auth.token,
         body: {
@@ -170,10 +171,31 @@ export default function WalkInPage() {
         <div className="checkin-result pending">
           <h2>Checked in — pending review</h2>
           <p className="checkin-visitor-name">{lastEntry.visitorName}</p>
+          {lastEntry.visitingResidentNames ? (
+            <p className="checkin-visiting">Visiting {lastEntry.visitingResidentNames}</p>
+          ) : (
+            lastEntry.unitId && (
+              <p className="checkin-visiting">
+                Unit {units.find((u) => u.id === lastEntry.unitId)?.unitNumber ?? lastEntry.unitId} — no resident on file yet
+              </p>
+            )
+          )}
           <p className="entry-meta">
             {lastEntry.category}
-            {lastEntry.vehicleRegistration && ` · ${lastEntry.vehicleRegistration}`}
-            {lastEntry.unitId && ` · Unit ${units.find((u) => u.id === lastEntry.unitId)?.unitNumber ?? lastEntry.unitId}`}
+            {lastEntry.vehicleRegistration && (
+              <>
+                {" "}
+                · {lastEntry.vehicleRegistration}
+                {lastEntry.vehicleRecognized && (
+                  <>
+                    {" "}
+                    <Seal state="cleared">
+                      Recognized{lastEntry.recognizedVehicleOwnerName && ` — ${lastEntry.recognizedVehicleOwnerName}'s`}
+                    </Seal>
+                  </>
+                )}
+              </>
+            )}
             {lastEntry.notes && ` · ${lastEntry.notes}`}
             {" · "}
             {new Date(lastEntry.enteredAt).toLocaleTimeString()}

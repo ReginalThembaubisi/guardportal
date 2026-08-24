@@ -41,6 +41,20 @@ export interface VisitorCheckInResponse {
   enteredAt: string;
 }
 
+export interface VisitorWalkInResponse {
+  id: number;
+  propertyId: number;
+  visitorName: string;
+  category: VisitorCategory;
+  unitId: number | null;
+  visitingResidentNames: string | null;
+  vehicleRegistration: string | null;
+  vehicleRecognized: boolean;
+  recognizedVehicleOwnerName: string | null;
+  enteredAt: string;
+  notes: string | null;
+}
+
 export interface UnitResponse {
   id: number;
   propertyId: number;
