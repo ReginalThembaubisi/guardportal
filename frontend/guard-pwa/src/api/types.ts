@@ -29,6 +29,18 @@ export interface VisitorEntryResponse {
   createdAt: string;
 }
 
+export interface VisitorCheckInResponse {
+  id: number;
+  propertyId: number;
+  visitorName: string;
+  category: VisitorCategory;
+  visitingResidentName: string | null;
+  vehicleRegistration: string | null;
+  vehicleRecognized: boolean;
+  recognizedVehicleOwnerName: string | null;
+  enteredAt: string;
+}
+
 export interface UnitResponse {
   id: number;
   propertyId: number;

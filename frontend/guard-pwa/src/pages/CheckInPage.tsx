@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { VisitorEntryResponse } from "../api/types";
+import type { VisitorCheckInResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 import QrScanner from "../components/QrScanner";
@@ -11,7 +11,7 @@ export default function CheckInPage() {
   const [qrToken, setQrToken] = useState("");
   const [vehicleRegistration, setVehicleRegistration] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [lastCheckIn, setLastCheckIn] = useState<VisitorEntryResponse | null>(null);
+  const [lastCheckIn, setLastCheckIn] = useState<VisitorCheckInResponse | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submitCheckIn(token: string) {
@@ -19,7 +19,7 @@ export default function CheckInPage() {
     setError(null);
     setBusy(true);
     try {
-      const entry = await apiFetch<VisitorEntryResponse>("/api/v1/visitor-entries", {
+      const entry = await apiFetch<VisitorCheckInResponse>("/api/v1/visitor-entries", {
         method: "POST",
         token: auth.token,
         body: {
@@ -80,6 +80,9 @@ export default function CheckInPage() {
         <div className="checkin-result">
           <h2>Checked in</h2>
           <p className="checkin-visitor-name">{lastCheckIn.visitorName}</p>
+          {lastCheckIn.visitingResidentName && (
+            <p className="checkin-visiting">Visiting {lastCheckIn.visitingResidentName}</p>
+          )}
           <p className="entry-meta">
             {lastCheckIn.category}
             {lastCheckIn.vehicleRegistration && (
@@ -89,7 +92,9 @@ export default function CheckInPage() {
                 {lastCheckIn.vehicleRecognized && (
                   <>
                     {" "}
-                    <Seal state="cleared">Recognized</Seal>
+                    <Seal state="cleared">
+                      Recognized{lastCheckIn.recognizedVehicleOwnerName && ` — ${lastCheckIn.recognizedVehicleOwnerName}'s`}
+                    </Seal>
                   </>
                 )}
               </>

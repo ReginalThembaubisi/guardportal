@@ -18,4 +18,10 @@ public interface ResidentVehicleRepository extends JpaRepository<ResidentVehicle
     // the moment the controller (outside the transaction) touches them.
     @Query("select rv from ResidentVehicle rv join fetch rv.vehicle where rv.resident.id = :residentId")
     List<ResidentVehicle> findAllByResident_Id(@Param("residentId") Long residentId);
+
+    // Same fetch-join reasoning, other direction: who does a given (recognized)
+    // vehicle belong to. join fetch through to the resident's user so the
+    // caller can read the resident's name after this transaction ends.
+    @Query("select rv from ResidentVehicle rv join fetch rv.resident r join fetch r.user where rv.vehicle.id = :vehicleId")
+    List<ResidentVehicle> findAllByVehicle_Id(@Param("vehicleId") Long vehicleId);
 }

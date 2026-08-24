@@ -512,6 +512,12 @@ form button[type="submit"]:disabled {
   margin: 0 0 4px;
 }
 
+.checkin-visiting {
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0 0 8px;
+}
+
 .badge {
   display: inline-block;
   font-family: var(--display);

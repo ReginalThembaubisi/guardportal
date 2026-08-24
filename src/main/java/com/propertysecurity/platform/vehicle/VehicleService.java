@@ -90,6 +90,22 @@ public class VehicleService {
         return vehicleId != null && residentVehicleRepository.existsByVehicle_Id(vehicleId);
     }
 
+    /**
+     * Which resident(s) a recognized vehicle belongs to — a "Recognized"
+     * seal on its own doesn't tell a guard whose vehicle it is, just that
+     * some resident registered it. Usually one name; a shared household
+     * vehicle could be linked by more than one resident account.
+     */
+    @Transactional(readOnly = true)
+    public List<String> recognizedOwnerNames(Long vehicleId) {
+        if (vehicleId == null) {
+            return List.of();
+        }
+        return residentVehicleRepository.findAllByVehicle_Id(vehicleId).stream()
+                .map(rv -> rv.getResident().getUser().getFullName())
+                .toList();
+    }
+
     private String normalize(String registration) {
         return registration.trim().toUpperCase();
     }

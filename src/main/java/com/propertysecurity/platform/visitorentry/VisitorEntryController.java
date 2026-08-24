@@ -2,6 +2,7 @@ package com.propertysecurity.platform.visitorentry;
 
 import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.visitorentry.dto.ScanRequest;
+import com.propertysecurity.platform.visitorentry.dto.VisitorCheckInResponse;
 import com.propertysecurity.platform.visitorentry.dto.VisitorEntryResponse;
 import com.propertysecurity.platform.visitorentry.dto.WalkInVisitorRequest;
 import jakarta.validation.Valid;
@@ -33,10 +34,10 @@ public class VisitorEntryController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public VisitorEntryResponse scan(Authentication authentication, @Valid @RequestBody ScanRequest request) {
+    public VisitorCheckInResponse scan(Authentication authentication, @Valid @RequestBody ScanRequest request) {
         Long guardUserId = (Long) authentication.getPrincipal();
         VisitorEntryService.CheckInResult result = visitorEntryService.checkIn(guardUserId, request.qrToken(), request.vehicleRegistration());
-        return VisitorEntryResponse.from(result.entry(), result.vehicleRecognized());
+        return VisitorCheckInResponse.from(result);
     }
 
     /** Walk-in / unexpected visitor — no invitation code, guard captures the details directly. */

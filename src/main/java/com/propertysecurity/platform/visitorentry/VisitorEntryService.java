@@ -50,7 +50,19 @@ public class VisitorEntryService {
     private final VehicleService vehicleService;
     private final AuditLogService auditLogService;
 
-    public record CheckInResult(VisitorEntry entry, boolean vehicleRecognized) {
+    /**
+     * visitingResidentName/recognizedVehicleOwnerName are plain Strings, not
+     * navigable entities: extracted while checkIn()'s transaction is still
+     * open, so whoever builds the response from this later (after the
+     * transaction has closed) can't trip a LazyInitializationException on
+     * them — see the comment on VisitorHistoryEntryResponse for why that
+     * hazard gets taken seriously here.
+     */
+    public record CheckInResult(
+            VisitorEntry entry,
+            boolean vehicleRecognized,
+            String visitingResidentName,
+            String recognizedVehicleOwnerName) {
     }
 
     /**
@@ -80,7 +92,9 @@ public class VisitorEntryService {
         auditLogService.record("invitation", invitation.getId(), AuditAction.UPDATE,
                 guardUserId, Map.of("status", previousStatus), Map.of("status", invitation.getStatus()));
 
-        PropertyUnit unit = invitation.getResident().getUnit();
+        Resident visitingResident = invitation.getResident();
+        PropertyUnit unit = visitingResident.getUnit();
+        String visitingResidentName = visitingResident.getUser().getFullName();
 
         Vehicle vehicle = null;
         if (vehicleRegistration != null && !vehicleRegistration.isBlank()) {
@@ -104,7 +118,10 @@ public class VisitorEntryService {
                 guardUserId, null, snapshot(saved));
 
         boolean recognized = vehicle != null && vehicleService.isRecognized(vehicle.getId());
-        return new CheckInResult(saved, recognized);
+        String recognizedVehicleOwnerName = recognized
+                ? String.join(", ", vehicleService.recognizedOwnerNames(vehicle.getId()))
+                : null;
+        return new CheckInResult(saved, recognized, visitingResidentName, recognizedVehicleOwnerName);
     }
 
     /**
