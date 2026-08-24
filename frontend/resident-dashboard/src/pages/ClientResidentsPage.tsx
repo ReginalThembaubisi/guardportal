@@ -11,20 +11,78 @@ import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 
 /**
- * Our own fixed format, not an attempt to parse arbitrary spreadsheets —
- * every residence keeps its existing list differently, so rather than
- * guess at columns, this demonstrates onboarding with one known shape:
- * a header row, then unitNumber,fullName,phoneNumber,email (email may be
- * blank). No quoted-field/escaped-comma support — good enough to
- * demonstrate bulk onboarding, not a general CSV parser.
+ * RFC 4180-ish CSV parser: quoted fields, commas and newlines inside a
+ * quoted field, "" as an escaped literal quote. Parses the whole file
+ * character-by-character rather than splitting on \n first, since a
+ * quoted field is allowed to contain a real newline.
+ */
+function parseCsvTable(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  let i = 0;
+
+  while (i < text.length) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i += 2;
+        } else {
+          inQuotes = false;
+          i++;
+        }
+      } else {
+        field += c;
+        i++;
+      }
+      continue;
+    }
+    if (c === '"') {
+      inQuotes = true;
+      i++;
+    } else if (c === ",") {
+      row.push(field);
+      field = "";
+      i++;
+    } else if (c === "\r") {
+      i++;
+    } else if (c === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+      i++;
+    } else {
+      field += c;
+      i++;
+    }
+  }
+  if (field.length > 0 || row.length > 0) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows.filter((r) => !(r.length === 1 && r[0] === ""));
+}
+
+/**
+ * Our own fixed column order, not an attempt to auto-detect arbitrary
+ * spreadsheet layouts — every residence keeps its existing list
+ * differently, so this demonstrates onboarding with one known shape:
+ * a header row, then unitNumber,fullName,phoneNumber,email (email may
+ * be blank).
  */
 function parseResidentCsv(text: string): ResidentImportRow[] {
-  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
-  const dataLines = lines.slice(1); // skip header row
-  return dataLines.map((line) => {
-    const [unitNumber, fullName, phoneNumber, email] = line.split(",").map((c) => c.trim());
-    return { unitNumber, fullName, phoneNumber, email: email || undefined };
-  });
+  const table = parseCsvTable(text);
+  const dataRows = table.slice(1); // skip header row
+  return dataRows.map(([unitNumber, fullName, phoneNumber, email]) => ({
+    unitNumber: (unitNumber ?? "").trim(),
+    fullName: (fullName ?? "").trim(),
+    phoneNumber: (phoneNumber ?? "").trim(),
+    email: email?.trim() || undefined,
+  }));
 }
 
 export default function ClientResidentsPage() {
@@ -44,6 +102,8 @@ export default function ClientResidentsPage() {
 
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<ResidentImportResponse | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!auth) return;
@@ -81,6 +141,17 @@ export default function ClientResidentsPage() {
   // already scoped to it (ResidentResponse doesn't carry a propertyId itself).
   const unitIdsForSelectedProperty = new Set((units ?? []).map((u) => u.id));
   const residentsForSelectedProperty = (residents ?? []).filter((r) => unitIdsForSelectedProperty.has(r.unitId));
+
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  const visibleResidents = trimmedQuery
+    ? residentsForSelectedProperty.filter(
+        (r) =>
+          r.fullName.toLowerCase().includes(trimmedQuery) ||
+          r.unitNumber.toLowerCase().includes(trimmedQuery) ||
+          r.phoneNumber.toLowerCase().includes(trimmedQuery) ||
+          (r.email ?? "").toLowerCase().includes(trimmedQuery),
+      )
+    : residentsForSelectedProperty;
 
   async function submitAdd(e: FormEvent) {
     e.preventDefault();
@@ -174,9 +245,19 @@ export default function ClientResidentsPage() {
 
       {properties && properties.length > 0 && (
         <>
-          <h2>Current residents</h2>
+          <h2>Current residents ({residentsForSelectedProperty.length})</h2>
+          {residentsForSelectedProperty.length > 0 && (
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, unit, phone, or email"
+            />
+          )}
           {residentsForSelectedProperty.length === 0 ? (
             <p className="empty">No residents on file for this property yet.</p>
+          ) : visibleResidents.length === 0 ? (
+            <p className="empty">No residents match "{searchQuery.trim()}".</p>
           ) : (
             <table className="entries-table">
               <thead>
@@ -189,7 +270,7 @@ export default function ClientResidentsPage() {
                 </tr>
               </thead>
               <tbody>
-                {residentsForSelectedProperty.map((r) => (
+                {visibleResidents.map((r) => (
                   <tr key={r.id}>
                     <td>{r.fullName}</td>
                     <td>{r.unitNumber}</td>
