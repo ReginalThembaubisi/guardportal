@@ -18,6 +18,63 @@ import { VehicleHistoryContent } from "./VehicleHistoryPage";
 type Segment = "checkin" | "onsite" | "vehicles";
 const CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STAFF"];
 
+const CODE_LENGTH = 6;
+
+/**
+ * Flip to true once the `short_code` migration and the `shortCode` field on
+ * ScanRequest are deployed.
+ *
+ * Until then a typed 6-digit code is sent as `qrToken`, where it simply will
+ * not match any invitation — the guard gets the honest "no such code here"
+ * outcome instead of a 400 from a field the server does not know about. QR
+ * scanning is unaffected either way: a scanned UUID always goes out as
+ * `qrToken`.
+ */
+const USE_SHORT_CODE_FIELD = false;
+
+type CodeOutcomeKind = "expired" | "used" | "notfound";
+type CodeOutcome = { kind: CodeOutcomeKind; heading: string; detail: string };
+
+/**
+ * A rejected code gets one of three named answers, because each has a
+ * different next action — expired and already-used both route to walk-in,
+ * a wrong code routes back to the keypad. Collapsing them into one "invalid
+ * code" message costs the guard the one piece of information they need.
+ *
+ * TODO(backend): this classifies on the human-readable message because that
+ * is all `ApiErrorBody` carries today. It should classify on a stable
+ * machine-readable field — add `reason: "EXPIRED" | "NOT_YET_VALID" |
+ * "ALREADY_USED" | "NOT_FOUND"` to the error body and switch on that. String
+ * matching breaks the moment someone rewords a server message.
+ *
+ * Note what is deliberately NOT distinguished: "no such code at this
+ * property" and "no such code anywhere" are the same answer, and nothing
+ * ever indicates which digit was wrong. Otherwise the error text becomes an
+ * enumeration oracle for a six-digit space.
+ */
+function classifyCodeError(err: unknown, code: string): CodeOutcome {
+  const raw = err instanceof ApiError ? err.message : "Check-in failed";
+  const m = raw.toLowerCase();
+  const spaced = formatCode(code);
+
+  if (m.includes("expired") || m.includes("not yet valid") || m.includes("valid from") || m.includes("valid until")) {
+    return { kind: "expired", heading: "That code expired", detail: raw };
+  }
+  if (m.includes("already") || m.includes("used") || m.includes("checked in")) {
+    return { kind: "used", heading: "That code was already used", detail: raw };
+  }
+  return {
+    kind: "notfound",
+    heading: "No invitation with that code",
+    detail: `Nothing at this property matches ${spaced} right now. Check it with the visitor, or log a walk-in.`,
+  };
+}
+
+/** 417302 -> "417 302". The triple grouping is how the code is spoken. */
+function formatCode(code: string): string {
+  return code.length > 3 ? `${code.slice(0, 3)} ${code.slice(3)}` : code;
+}
+
 /**
  * Everything about people at the boundary, in one place — resolves the old
  * naming problem where the bottom nav read "Check in" / "Check out" /
@@ -26,6 +83,14 @@ const CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STA
  * an unrelated meaning. Segment is local state, not routed — flipping
  * between "who's here" and "check someone in" shouldn't build history
  * entries.
+ *
+ * Check-in is code-first. `invitation.qrToken` is a 36-character UUID, so the
+ * old "type the code manually" fallback was a fallback nobody could use: no
+ * guard types 36 hex characters at a gate, at night, one-handed. Camera
+ * access on a BYOD phone fails for reasons the product cannot control
+ * (permission denied, cracked lens, glare, a visitor's dead screen), and each
+ * of those used to end the check-in. So typing a 6-digit code is the primary
+ * path and scanning is the always-available secondary.
  */
 export default function GatePage() {
   const { auth, setPropertyId } = useAuth();
@@ -41,10 +106,12 @@ export default function GatePage() {
   const [checkedOutToday, setCheckedOutToday] = useState<VisitorHistoryEntryResponse[] | null>(null);
 
   const [vehicleRegistration, setVehicleRegistration] = useState("");
-  const [qrToken, setQrToken] = useState("");
+  const [digits, setDigits] = useState("");
+  const [outcome, setOutcome] = useState<CodeOutcome | null>(null);
   const [checkInError, setCheckInError] = useState<string | null>(null);
   const [checkInBusy, setCheckInBusy] = useState(false);
   const [lastCheckIn, setLastCheckIn] = useState<VisitorCheckInResponse | null>(null);
+  const [scanning, setScanning] = useState(false);
 
   const loadOccupancy = useCallback(() => {
     if (!auth || auth.propertyId === null) return;
@@ -79,30 +146,71 @@ export default function GatePage() {
 
   useEffect(loadTodayHistory, [loadTodayHistory]);
 
-  async function submitCheckIn(token: string) {
+  /** Shared by the keypad and the scanner. `code` is digits-only or a UUID. */
+  async function submitCheckIn(value: string, viaShortCode: boolean) {
     if (!auth || checkInBusy) return;
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
     setCheckInError(null);
+    setOutcome(null);
     setCheckInBusy(true);
     try {
+      const body =
+        viaShortCode && USE_SHORT_CODE_FIELD
+          ? { shortCode: trimmed, vehicleRegistration: vehicleRegistration.trim() || undefined }
+          : { qrToken: trimmed, vehicleRegistration: vehicleRegistration.trim() || undefined };
+
       const entry = await apiFetch<VisitorCheckInResponse>("/api/v1/visitor-entries", {
         method: "POST",
         token: auth.token,
-        body: { qrToken: token.trim(), vehicleRegistration: vehicleRegistration.trim() || undefined },
+        body,
       });
       setLastCheckIn(entry);
       setPropertyId(entry.propertyId);
-      setQrToken("");
+      setDigits("");
+      setVehicleRegistration("");
+      setScanning(false);
       loadOccupancy();
     } catch (err) {
-      setCheckInError(err instanceof ApiError ? err.message : "Check-in failed");
+      if (viaShortCode) {
+        // Keep the digits on screen so the guard can re-read them against
+        // what the visitor is holding, rather than having the code cleared
+        // out from under them.
+        setOutcome(classifyCodeError(err, trimmed));
+      } else {
+        setCheckInError(err instanceof ApiError ? err.message : "Check-in failed");
+      }
     } finally {
       setCheckInBusy(false);
     }
   }
 
-  function handleManualCheckIn(e: FormEvent) {
+  function handleCodeSubmit(e: FormEvent) {
     e.preventDefault();
-    submitCheckIn(qrToken);
+    if (digits.length !== CODE_LENGTH) return;
+    submitCheckIn(digits, true);
+  }
+
+  function pressDigit(d: string) {
+    setOutcome(null);
+    setDigits((prev) => (prev.length >= CODE_LENGTH ? prev : prev + d));
+  }
+
+  function pressBack() {
+    setOutcome(null);
+    setDigits((prev) => prev.slice(0, -1));
+  }
+
+  function pressClear() {
+    setOutcome(null);
+    setDigits("");
+  }
+
+  function nextCode() {
+    setLastCheckIn(null);
+    setOutcome(null);
+    setDigits("");
   }
 
   async function handleExit(entryId: number) {
@@ -159,6 +267,36 @@ export default function GatePage() {
     );
   }
 
+  const remaining = CODE_LENGTH - digits.length;
+  const codeReady = remaining === 0;
+  const walkInHref = `/walk-in${
+    vehicleRegistration.trim() || digits ? `?reg=${encodeURIComponent(vehicleRegistration.trim())}&code=${digits}` : ""
+  }`;
+
+  function codeSlots() {
+    return (
+      <div className="code-slots" aria-hidden="true">
+        {Array.from({ length: CODE_LENGTH }).map((_, i) => {
+          const filled = i < digits.length;
+          const isNext = !outcome && i === digits.length;
+          const classes = ["code-slot"];
+          if (outcome) classes.push(filled ? `rejected-${outcome.kind === "notfound" ? "danger" : "flag"}` : "");
+          else if (filled) classes.push("filled");
+          else if (isNext) classes.push("next");
+
+          return (
+            <span key={i} className="code-slot-wrap">
+              {i === 3 && <span className="code-slot-separator" />}
+              <span className={classes.filter(Boolean).join(" ")}>
+                {filled ? digits[i] : isNext ? <span className="code-slot-caret" /> : null}
+              </span>
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <Layout title="Gate">
       <div className="screen-header">
@@ -186,69 +324,133 @@ export default function GatePage() {
           <>
             {checkInError && <p className="error">{checkInError}</p>}
 
-            <div className="camera-viewport">
-              <span className="camera-corner tl" aria-hidden="true" />
-              <span className="camera-corner tr" aria-hidden="true" />
-              <span className="camera-corner bl" aria-hidden="true" />
-              <span className="camera-corner br" aria-hidden="true" />
-              <QrScanner onDecode={submitCheckIn} />
-              <span className="camera-hint">Point at the visitor's QR</span>
-            </div>
+            {/* Always present, never the largest thing on screen. Not disabled
+                when the camera is unavailable — tapping it is how a guard
+                learns the camera is the problem. */}
+            <button type="button" className="scan-strip" onClick={() => setScanning(true)}>
+              <span className="scan-strip-thumb" aria-hidden="true">
+                <span className="scan-strip-corner tl" />
+                <span className="scan-strip-corner tr" />
+                <span className="scan-strip-corner bl" />
+                <span className="scan-strip-corner br" />
+              </span>
+              <span className="scan-strip-text">
+                <span className="scan-strip-title">Scan the QR instead</span>
+                <span className="scan-strip-sub">Opens the camera full screen</span>
+              </span>
+              <span className="scan-strip-open">Open</span>
+            </button>
 
-            <label>
-              Vehicle registration — before you scan, if there is one
-              <input
-                type="text"
-                className="guard-input"
-                value={vehicleRegistration}
-                onChange={(e) => setVehicleRegistration(e.target.value.toUpperCase())}
-                placeholder="CA 123 456"
-              />
-            </label>
-
-            <div className="fallback-divider">
-              <span className="fallback-divider-rule" />
-              <span className="fallback-divider-text">Camera not working?</span>
-              <span className="fallback-divider-rule" />
-            </div>
-
-            <form onSubmit={handleManualCheckIn} className="manual-entry-row">
-              <input
-                type="text"
-                className="guard-input"
-                value={qrToken}
-                onChange={(e) => setQrToken(e.target.value)}
-                placeholder="Type the code"
-                required
-              />
-              <button type="submit" disabled={checkInBusy}>
-                {checkInBusy ? "…" : "Check in"}
-              </button>
-            </form>
-
-            {lastCheckIn && (
-              <div className="checkin-result">
-                <h2>Checked in</h2>
-                <p className="checkin-visitor-name">{lastCheckIn.visitorName}</p>
-                {lastCheckIn.visitingResidentName && (
-                  <p className="checkin-visiting">Visiting {lastCheckIn.visitingResidentName}</p>
-                )}
-                <p className="entry-meta">
-                  {lastCheckIn.category}
-                  {lastCheckIn.vehicleRegistration && ` · ${lastCheckIn.vehicleRegistration}`}
-                  {" · "}
-                  {new Date(lastCheckIn.enteredAt).toLocaleTimeString()}
-                  {lastCheckIn.vehicleRecognized && (
-                    <>
-                      {" "}
-                      <Seal state="cleared">Recognised</Seal>
-                    </>
+            {lastCheckIn ? (
+              <>
+                <div className="checkin-result">
+                  <h2>Checked in</h2>
+                  <p className="checkin-visitor-name">{lastCheckIn.visitorName}</p>
+                  {lastCheckIn.visitingResidentName && (
+                    <p className="checkin-visiting">Visiting {lastCheckIn.visitingResidentName}</p>
                   )}
-                </p>
-              </div>
+                  <p className="entry-meta">
+                    {lastCheckIn.category}
+                    {lastCheckIn.vehicleRegistration && ` · ${lastCheckIn.vehicleRegistration}`}
+                    {" · "}
+                    {new Date(lastCheckIn.enteredAt).toLocaleTimeString()}
+                    {lastCheckIn.vehicleRecognized && (
+                      <>
+                        {" "}
+                        <Seal state="cleared">Recognised</Seal>
+                      </>
+                    )}
+                  </p>
+                  {/* Names the path taken and shows the server's timestamp —
+                      the record that actually counts (principle #2). */}
+                  <p className="checkin-provenance">
+                    Server-stamped {new Date(lastCheckIn.enteredAt).toLocaleTimeString()}
+                  </p>
+                </div>
+
+                <button type="button" className="next-code-button" onClick={nextCode}>
+                  Next code
+                </button>
+              </>
+            ) : (
+              <form onSubmit={handleCodeSubmit} className="code-entry">
+                {outcome && (
+                  <div className={`code-outcome ${outcome.kind}`} role="alert">
+                    <span className="code-outcome-heading">{outcome.heading}</span>
+                    <span className="code-outcome-detail">{outcome.detail}</span>
+                    <span className="code-outcome-note">Nothing is blocked · log a walk-in and it is reviewed later</span>
+                  </div>
+                )}
+
+                <div className="code-field">
+                  <span className="eyebrow">Visitor's 6-digit code</span>
+                  {/* The real control: focusable, accepts a hardware keyboard
+                      and assistive tech. inputMode="none" keeps the OS
+                      keyboard from covering the screen — the built keypad
+                      below guarantees a tap target the OS one does not. */}
+                  <input
+                    className="code-input-hidden"
+                    type="text"
+                    inputMode="none"
+                    autoComplete="off"
+                    aria-label="Visitor's 6-digit code"
+                    value={digits}
+                    maxLength={CODE_LENGTH}
+                    onChange={(e) => {
+                      setOutcome(null);
+                      setDigits(e.target.value.replace(/\D/g, "").slice(0, CODE_LENGTH));
+                    }}
+                  />
+                  {codeSlots()}
+                </div>
+
+                {/* Sits between the code and the keypad, in the eye path,
+                    because it must be filled before submit. */}
+                <input
+                  type="text"
+                  className="guard-input reg-input-compact"
+                  value={vehicleRegistration}
+                  onChange={(e) => setVehicleRegistration(e.target.value.toUpperCase())}
+                  placeholder="Vehicle reg, if there is one"
+                  aria-label="Vehicle registration, if there is one"
+                />
+
+                <div className="keypad">
+                  {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+                    <button key={d} type="button" onClick={() => pressDigit(d)}>
+                      {d}
+                    </button>
+                  ))}
+                  <button type="button" className="keypad-action" onClick={pressClear}>
+                    Clear
+                  </button>
+                  <button type="button" onClick={() => pressDigit("0")}>
+                    0
+                  </button>
+                  <button type="button" className="keypad-action" onClick={pressBack}>
+                    Back
+                  </button>
+                </div>
+
+                {/* The button is the progress indicator, so nothing else has
+                    to be. Deliberately no auto-submit on the sixth digit — a
+                    mistyped last digit would fire a request and burn a
+                    rate-limit attempt before the guard could look at it. */}
+                <button type="submit" className={`code-submit${codeReady ? " ready" : ""}`} disabled={!codeReady || checkInBusy}>
+                  {checkInBusy
+                    ? "Checking…"
+                    : codeReady
+                      ? "Check in"
+                      : `Enter ${remaining} more digit${remaining === 1 ? "" : "s"}`}
+                </button>
+              </form>
             )}
 
-            <Link to="/walk-in" className="walk-in-escape" style={{ display: "block", textAlign: "center", textDecoration: "none" }}>
+            <Link
+              to={walkInHref}
+              className="walk-in-escape"
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none" }}
+            >
               No invitation? Log a walk-in
             </Link>
           </>
@@ -348,6 +550,17 @@ export default function GatePage() {
 
         {segment === "vehicles" && <VehicleHistoryContent />}
       </div>
+
+      {/* Full screen, not a 246px inline box — a scan is a whole-attention
+          action. QrScanner itself is unchanged; only where it mounts changed. */}
+      {scanning && (
+        <div className="scanner-fullscreen" role="dialog" aria-modal="true" aria-label="Scan a QR code">
+          <QrScanner onDecode={(decoded) => submitCheckIn(decoded, false)} />
+          <button type="button" className="scanner-fullscreen-close" onClick={() => setScanning(false)}>
+            Type the code instead
+          </button>
+        </div>
+      )}
     </Layout>
   );
 }

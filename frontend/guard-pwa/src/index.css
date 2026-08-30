@@ -299,16 +299,6 @@ form button[type="submit"]:disabled {
   background: var(--surface);
 }
 
-.scanner-divider {
-  text-align: center;
-  color: var(--text-muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin: 4px 0 14px;
-}
-
 .link-button {
   background: none;
   border: none;
@@ -1216,111 +1206,6 @@ form button[type="submit"]:disabled {
   color: var(--surface-sunken);
 }
 
-.camera-viewport {
-  position: relative;
-  height: 246px;
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  background: #000;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.camera-viewport .qr-scanner,
-.camera-viewport .qr-scanner-view {
-  height: 100%;
-  margin-bottom: 0;
-}
-
-.camera-corner {
-  position: absolute;
-  width: 34px;
-  height: 34px;
-  border: 3px solid var(--accent);
-  pointer-events: none;
-}
-
-.camera-corner.tl {
-  top: 18px;
-  left: 18px;
-  border-right: none;
-  border-bottom: none;
-}
-
-.camera-corner.tr {
-  top: 18px;
-  right: 18px;
-  border-left: none;
-  border-bottom: none;
-}
-
-.camera-corner.bl {
-  bottom: 18px;
-  left: 18px;
-  border-right: none;
-  border-top: none;
-}
-
-.camera-corner.br {
-  bottom: 18px;
-  right: 18px;
-  border-left: none;
-  border-top: none;
-}
-
-.camera-hint {
-  font-family: var(--mono);
-  font-size: 11.5px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.fallback-divider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.fallback-divider-rule {
-  flex: 1;
-  height: 1px;
-  background: var(--rule);
-}
-
-.fallback-divider-text {
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.manual-entry-row {
-  display: flex;
-  gap: 9px;
-}
-
-.manual-entry-row input {
-  flex: 1;
-}
-
-.manual-entry-row button {
-  min-width: 104px;
-  min-height: 50px;
-  border: 1px solid var(--accent);
-  border-radius: 4px;
-  background: var(--accent-tint);
-  color: var(--accent-strong);
-  font-family: var(--display);
-  text-transform: uppercase;
-  font-size: 16px;
-  font-weight: 700;
-}
-
 .guard-input {
   min-height: 50px;
   font-size: 17px;
@@ -1548,4 +1433,438 @@ form button[type="submit"]:disabled {
 .report-submit:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* ============================================================
+   Gate → Check in, code-first.
+   ============================================================ */
+
+/* --- Scan strip: always available, never dominant ---------- */
+
+.scan-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.scan-strip:hover {
+  border-color: var(--accent);
+}
+
+.scan-strip-thumb {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 3px;
+  background: #000;
+  flex-shrink: 0;
+}
+
+.scan-strip-corner {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--accent);
+}
+
+.scan-strip-corner.tl {
+  top: 6px;
+  left: 6px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.scan-strip-corner.tr {
+  top: 6px;
+  right: 6px;
+  border-left: none;
+  border-bottom: none;
+}
+
+.scan-strip-corner.bl {
+  bottom: 6px;
+  left: 6px;
+  border-right: none;
+  border-top: none;
+}
+
+.scan-strip-corner.br {
+  bottom: 6px;
+  right: 6px;
+  border-left: none;
+  border-top: none;
+}
+
+.scan-strip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.scan-strip-title {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+}
+
+.scan-strip-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.scan-strip-open {
+  margin-left: auto;
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* --- Full-screen scanner ----------------------------------- */
+
+.scanner-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.scanner-fullscreen .qr-scanner,
+.scanner-fullscreen .qr-scanner-view {
+  flex: 1;
+  margin-bottom: 0;
+  min-height: 0;
+}
+
+.scanner-fullscreen-close {
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 62px;
+  border: none;
+  border-top: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* --- Code entry ------------------------------------------- */
+
+.code-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.code-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/*
+  Visually hidden but focusable — the slots below are decoration
+  (aria-hidden), this is the control. Not display:none, or hardware
+  keyboards and assistive tech lose it.
+*/
+.code-input-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.code-slots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.code-slot-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+/* The 3+3 grouping is load-bearing — it is how the code is spoken. */
+.code-slot-separator {
+  width: 9px;
+  height: 1px;
+  background: var(--rule);
+  flex-shrink: 0;
+}
+
+.code-slot {
+  flex: 1;
+  height: 62px;
+  min-width: 0;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface-sunken);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--stencil);
+  font-weight: 800;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.code-slot.filled {
+  border-color: var(--accent);
+}
+
+.code-slot.next {
+  border: 2px solid var(--accent-strong);
+}
+
+.code-slot-caret {
+  width: 2px;
+  height: 26px;
+  background: var(--accent-strong);
+}
+
+/*
+  A rejected code keeps its digits on screen in the outcome colour so the
+  guard can re-read them against what the visitor is holding, rather than
+  having the code cleared out from under them.
+*/
+.code-slot.rejected-flag {
+  border-color: var(--flag);
+  color: var(--flag);
+}
+
+.code-slot.rejected-danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.reg-input-compact {
+  min-height: 46px;
+  font-size: 16px;
+  padding: 12px;
+}
+
+/* --- Keypad ------------------------------------------------
+   Built, not the OS numeric keyboard: the system keyboard costs a
+   slide-in animation on every entry, occludes the result card and the
+   reg field, and gives keys whose size the product does not control.
+   At 390px these are ~112 × 58px — past the 44px floor PRODUCT.md
+   binds us to, and hittable without looking.
+   ---------------------------------------------------------- */
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+}
+
+.keypad button {
+  min-height: 58px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--stencil);
+  font-weight: 800;
+  font-size: 28px;
+}
+
+.keypad button:active {
+  background: var(--accent-tint);
+  border-color: var(--accent);
+}
+
+.keypad button.keypad-action {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* --- Submit: doubles as the progress indicator ------------- */
+
+.code-submit {
+  width: 100%;
+  min-height: 66px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.code-submit.ready {
+  border: none;
+  background: var(--accent);
+  color: var(--surface-sunken);
+}
+
+.code-submit.ready:hover {
+  background: var(--accent-strong);
+}
+
+.next-code-button {
+  width: 100%;
+  min-height: 66px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--surface-sunken);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.next-code-button:hover {
+  background: var(--accent-strong);
+}
+
+.checkin-provenance {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* --- The three rejection outcomes -------------------------
+   Each gets its own answer because each has a different next action.
+   Expired and already-used are flags, not blocks — the guard is routed
+   to walk-in, which lands at PENDING for passive review (principle #3).
+   ---------------------------------------------------------- */
+
+.code-outcome {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 15px 16px;
+  border-radius: 4px;
+}
+
+.code-outcome-heading {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.code-outcome-detail {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.code-outcome-note {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.code-outcome.expired,
+.code-outcome.used {
+  background: var(--flag-tint);
+  border: 1px solid var(--flag);
+}
+
+.code-outcome.expired .code-outcome-heading,
+.code-outcome.used .code-outcome-heading,
+.code-outcome.expired .code-outcome-note,
+.code-outcome.used .code-outcome-note {
+  color: var(--flag);
+}
+
+.code-outcome.notfound {
+  background: var(--danger-tint);
+  border: 1px solid var(--danger);
+}
+
+.code-outcome.notfound .code-outcome-heading,
+.code-outcome.notfound .code-outcome-note {
+  color: var(--danger);
+}
+
+/* --- Walk-in: values carried over from the gate ------------
+   Prefill is never silent. A guard who lands on a form with a reg
+   already in it needs to know why, or they will assume it's stale data
+   from the last visitor and clear it.
+   ---------------------------------------------------------- */
+
+.carried-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 11px 14px;
+  margin-bottom: 14px;
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+}
+
+.carried-note-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+.carried-note-detail {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.carried-note-clear {
+  margin-left: auto;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 13.5px;
+  font-weight: 700;
 }

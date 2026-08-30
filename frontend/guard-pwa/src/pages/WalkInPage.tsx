@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 import { apiFetch, ApiError } from "../api/client";
 import type { UnitResponse, VisitorCategory, VisitorWalkInResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
@@ -7,16 +8,40 @@ import Seal from "../components/Seal";
 
 const CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STAFF"];
 
+/** 417302 -> "417 302". Matches how Gate displays and how the code is spoken. */
+function formatCode(code: string): string {
+  return code.length > 3 ? `${code.slice(0, 3)} ${code.slice(3)}` : code;
+}
+
 export default function WalkInPage() {
   const { auth, setPropertyId } = useAuth();
+
+  /*
+    Gate → Check in links here as /walk-in?reg=…&code=… when a code won't
+    clear, so an expired or unknown code doesn't cost the guard a re-type of
+    everything they already keyed in. Read once for the initial state only —
+    deliberately not a useEffect that re-syncs, or the guard's own edits would
+    be overwritten on every render.
+
+    The code is seeded into `purpose` rather than dropped: a visitor who
+    presented a code that didn't work is a materially different record from
+    one who arrived with nothing, and that difference belongs in the entry
+    that goes to passive review. It is prefilled and editable, never hidden —
+    the guard can reword or clear it.
+  */
+  const [searchParams] = useSearchParams();
+  const carriedReg = (searchParams.get("reg") ?? "").toUpperCase();
+  const carriedCode = (searchParams.get("code") ?? "").replace(/\D/g, "").slice(0, 6);
+
   const [visitorName, setVisitorName] = useState("");
   const [visitorPhone, setVisitorPhone] = useState("");
-  const [purpose, setPurpose] = useState("");
+  const [purpose, setPurpose] = useState(carriedCode ? `Presented code ${formatCode(carriedCode)} — did not clear` : "");
   const [category, setCategory] = useState<VisitorCategory>("VISITOR");
-  const [vehicleRegistration, setVehicleRegistration] = useState("");
+  const [vehicleRegistration, setVehicleRegistration] = useState(carriedReg);
   const [error, setError] = useState<string | null>(null);
   const [lastEntry, setLastEntry] = useState<VisitorWalkInResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showCarriedNote, setShowCarriedNote] = useState(Boolean(carriedReg || carriedCode));
 
   const [units, setUnits] = useState<UnitResponse[]>([]);
   const [unitQuery, setUnitQuery] = useState("");
@@ -71,6 +96,7 @@ export default function WalkInPage() {
       setPurpose("");
       setCategory("VISITOR");
       setVehicleRegistration("");
+      setShowCarriedNote(false);
       clearUnit();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Walk-in check-in failed");
@@ -82,6 +108,25 @@ export default function WalkInPage() {
   return (
     <Layout title="Walk-in Visitor">
       {error && <p className="error">{error}</p>}
+
+      {/* Prefill is never silent — say where the values came from. */}
+      {showCarriedNote && (
+        <div className="carried-note">
+          <span className="carried-note-title">Carried over from the gate</span>
+          <span className="carried-note-detail">
+            {carriedCode && (
+              <>
+                Code <strong>{formatCode(carriedCode)}</strong>
+                {carriedReg && " · "}
+              </>
+            )}
+            {carriedReg && <>Reg <strong>{carriedReg}</strong></>}
+          </span>
+          <button type="button" className="carried-note-clear" onClick={() => setShowCarriedNote(false)}>
+            Hide
+          </button>
+        </div>
+      )}
 
       <form onSubmit={submit}>
         <label>
