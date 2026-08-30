@@ -49,6 +49,8 @@ public class VisitorEntryService {
     private final PropertyUnitRepository propertyUnitRepository;
     private final VehicleService vehicleService;
     private final AuditLogService auditLogService;
+    private final ShortCodeLookupAttemptRepository shortCodeLookupAttemptRepository;
+    private final ShortCodeRateLimiter shortCodeRateLimiter;
 
     /**
      * visitingResidentName/recognizedVehicleOwnerName are plain Strings, not
@@ -86,6 +88,87 @@ public class VisitorEntryService {
         validateTimeWindow(invitation);
         validateSameProperty(guard, invitation);
 
+        return performCheckIn(guard, invitation, guardUserId, vehicleRegistration);
+    }
+
+    /**
+     * Same outcome as checkIn(), reached by typing a 6-digit short code
+     * instead of scanning a QR. Looked up scoped to the guard's own
+     * property (see InvitationRepository), so this never needs
+     * validateSameProperty — a match by construction can't be for another
+     * property. Rejections classify into a stable {@link CheckInRejectionReason}
+     * instead of throwing the same generic BadRequestException validateStatus/
+     * validateTimeWindow do for qrToken, because the frontend needs to route
+     * each outcome differently (walk-in vs. re-type) without parsing prose —
+     * see classifyCodeError's TODO in GatePage.tsx.
+     *
+     * Failed lookups are rate-limited per guard and written to
+     * short_code_lookup_attempt (not audit_log — see that table's own
+     * comment for why) so a token being hammered is visible.
+     */
+    public CheckInResult checkInByShortCode(Long guardUserId, String shortCode, String vehicleRegistration) {
+        Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
+
+        shortCodeRateLimiter.assertNotBlocked(guardUserId);
+
+        Optional<Invitation> found = invitationRepository
+                .findTopByShortCodeAndResident_Unit_Property_IdOrderByCreatedAtDesc(shortCode, guard.getProperty().getId());
+
+        CheckInRejectionReason rejection = found.isEmpty() ? CheckInRejectionReason.NOT_FOUND : classifyRejection(found.get());
+        if (rejection != null) {
+            shortCodeRateLimiter.recordFailure(guardUserId);
+            recordFailedLookup(guard, rejection);
+            throw new CheckInRejectedException(rejection, rejectionMessage(rejection, found.orElse(null)));
+        }
+
+        shortCodeRateLimiter.recordSuccess(guardUserId);
+        return performCheckIn(guard, found.get(), guardUserId, vehicleRegistration);
+    }
+
+    /** null means the invitation is PENDING and within its validity window — clear to check in. */
+    private CheckInRejectionReason classifyRejection(Invitation invitation) {
+        LocalDateTime now = LocalDateTime.now();
+        if (invitation.getStatus() == InvitationStatus.USED || invitation.getStatus() == InvitationStatus.CANCELLED) {
+            return CheckInRejectionReason.ALREADY_USED;
+        }
+        if (now.isBefore(invitation.getValidFrom())) {
+            return CheckInRejectionReason.NOT_YET_VALID;
+        }
+        if (now.isAfter(invitation.getValidUntil()) || invitation.getStatus() == InvitationStatus.EXPIRED) {
+            return CheckInRejectionReason.EXPIRED;
+        }
+        return null;
+    }
+
+    private String rejectionMessage(CheckInRejectionReason reason, Invitation invitation) {
+        return switch (reason) {
+            case NOT_FOUND -> "No invitation with that code at this property";
+            case EXPIRED -> "This invitation has expired"
+                    + (invitation != null ? " (was valid until " + invitation.getValidUntil() + ")" : "");
+            case NOT_YET_VALID -> "This invitation is not valid yet"
+                    + (invitation != null ? " (valid from " + invitation.getValidFrom() + ")" : "");
+            case ALREADY_USED -> invitation != null && invitation.getStatus() == InvitationStatus.CANCELLED
+                    ? "This invitation was cancelled"
+                    : "This invitation has already been used";
+        };
+    }
+
+    private void recordFailedLookup(Guard guard, CheckInRejectionReason reason) {
+        ShortCodeLookupAttempt attempt = new ShortCodeLookupAttempt();
+        attempt.setGuard(guard);
+        attempt.setProperty(guard.getProperty());
+        attempt.setReason(reason);
+        shortCodeLookupAttemptRepository.save(attempt);
+    }
+
+    /**
+     * The write path shared by both check-in routes: mark the invitation
+     * USED, create the visitor_entry, and audit both (CLAUDE.md rule 2).
+     * The caller has already established the invitation is PENDING, within
+     * its validity window, and at the guard's property.
+     */
+    private CheckInResult performCheckIn(Guard guard, Invitation invitation, Long guardUserId, String vehicleRegistration) {
         InvitationStatus previousStatus = invitation.getStatus();
         invitation.setStatus(InvitationStatus.USED);
         invitationRepository.save(invitation);

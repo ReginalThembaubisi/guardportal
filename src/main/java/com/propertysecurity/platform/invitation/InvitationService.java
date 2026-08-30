@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,6 +26,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional
 public class InvitationService {
+
+    private static final int SHORT_CODE_MAX_ATTEMPTS = 20;
+    private static final SecureRandom SHORT_CODE_RANDOM = new SecureRandom();
 
     private final InvitationRepository invitationRepository;
     private final ResidentRepository residentRepository;
@@ -55,6 +59,8 @@ public class InvitationService {
         invitation.setValidFrom(request.validFrom());
         invitation.setValidUntil(request.validUntil());
         invitation.setQrToken(UUID.randomUUID().toString());
+        Long propertyId = resident.getUnit().getProperty().getId();
+        invitation.setShortCode(generateShortCode(propertyId, request.validFrom(), request.validUntil()));
         invitation.setStatus(InvitationStatus.PENDING);
 
         Invitation saved = invitationRepository.save(invitation);
@@ -111,6 +117,24 @@ public class InvitationService {
         return digitsOnlyPhone == null
                 ? "https://wa.me/?text=" + encodedMessage
                 : "https://wa.me/" + digitsOnlyPhone + "?text=" + encodedMessage;
+    }
+
+    /**
+     * SecureRandom, not the entity id or a sequence — a guessable code would
+     * make brute-forcing meaningfully easier. Collisions are only checked
+     * against invitations that could actually be confused for this one
+     * (same property, overlapping validity window, still PENDING); an old
+     * invitation that's expired or used is free to share a digit
+     * combination with a new one (see V13__add_invitation_short_code.sql).
+     */
+    private String generateShortCode(Long propertyId, LocalDateTime validFrom, LocalDateTime validUntil) {
+        for (int attempt = 0; attempt < SHORT_CODE_MAX_ATTEMPTS; attempt++) {
+            String candidate = String.format("%06d", SHORT_CODE_RANDOM.nextInt(1_000_000));
+            if (!invitationRepository.existsOverlappingPendingShortCode(candidate, propertyId, validFrom, validUntil)) {
+                return candidate;
+            }
+        }
+        throw new IllegalStateException("Could not generate a unique short code after " + SHORT_CODE_MAX_ATTEMPTS + " attempts");
     }
 
     private Map<String, Object> snapshot(Invitation invitation) {

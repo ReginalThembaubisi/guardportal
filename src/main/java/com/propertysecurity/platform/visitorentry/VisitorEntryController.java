@@ -1,5 +1,6 @@
 package com.propertysecurity.platform.visitorentry;
 
+import com.propertysecurity.platform.exception.BadRequestException;
 import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.visitorentry.dto.ScanRequest;
 import com.propertysecurity.platform.visitorentry.dto.VisitorCheckInResponse;
@@ -30,15 +31,23 @@ public class VisitorEntryController {
     private final VisitorEntryRepository visitorEntryRepository;
 
     /**
-     * The one guard-facing action: scan (or manually key in) a QR token to
-     * validate it and check the visitor in. Same endpoint either way — a
-     * scanned QR and a manually typed token both just arrive as a string.
+     * The one guard-facing action: scan a QR code or type a 6-digit short
+     * code to validate it and check the visitor in. Exactly one of the two
+     * must be present — both or neither is a 400, not a silent fallback.
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public VisitorCheckInResponse scan(Authentication authentication, @Valid @RequestBody ScanRequest request) {
         Long guardUserId = (Long) authentication.getPrincipal();
-        VisitorEntryService.CheckInResult result = visitorEntryService.checkIn(guardUserId, request.qrToken(), request.vehicleRegistration());
+        boolean hasQrToken = request.qrToken() != null && !request.qrToken().isBlank();
+        boolean hasShortCode = request.shortCode() != null && !request.shortCode().isBlank();
+        if (hasQrToken == hasShortCode) {
+            throw new BadRequestException("Provide exactly one of qrToken or shortCode");
+        }
+
+        VisitorEntryService.CheckInResult result = hasShortCode
+                ? visitorEntryService.checkInByShortCode(guardUserId, request.shortCode(), request.vehicleRegistration())
+                : visitorEntryService.checkIn(guardUserId, request.qrToken(), request.vehicleRegistration());
         return VisitorCheckInResponse.from(result);
     }
 

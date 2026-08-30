@@ -1,5 +1,6 @@
 package com.propertysecurity.platform.exception;
 
+import com.propertysecurity.platform.visitorentry.CheckInRejectedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -28,6 +29,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
         return body(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(TooManyAttemptsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyAttempts(TooManyAttemptsException ex) {
+        return body(HttpStatus.TOO_MANY_REQUESTS, ex.getMessage());
+    }
+
+    /** Same shape as the other 400s, plus a stable `reason` a frontend can switch on instead of parsing `error`. */
+    @ExceptionHandler(CheckInRejectedException.class)
+    public ResponseEntity<Map<String, Object>> handleCheckInRejected(CheckInRejectedException ex) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("timestamp", LocalDateTime.now());
+        payload.put("status", HttpStatus.BAD_REQUEST.value());
+        payload.put("error", ex.getMessage());
+        payload.put("reason", ex.getReason().name());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(payload);
     }
 
     @ExceptionHandler(BadCredentialsException.class)

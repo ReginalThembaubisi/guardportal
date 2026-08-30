@@ -21,8 +21,11 @@ const CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STA
 const CODE_LENGTH = 6;
 
 /**
- * Flip to true once the `short_code` migration and the `shortCode` field on
- * ScanRequest are deployed.
+ * Flip to true now that the `short_code` migration and the `shortCode`
+ * field on ScanRequest are deployed (see backend commit adding
+ * V13__add_invitation_short_code.sql and CheckInRejectedException) — kept
+ * false until the resident share screen (step 3) also ships, since a code
+ * guards can type but residents can't send is half a feature.
  *
  * Until then a typed 6-digit code is sent as `qrToken`, where it simply will
  * not match any invitation — the guard gets the honest "no such code here"
@@ -41,33 +44,39 @@ type CodeOutcome = { kind: CodeOutcomeKind; heading: string; detail: string };
  * a wrong code routes back to the keypad. Collapsing them into one "invalid
  * code" message costs the guard the one piece of information they need.
  *
- * TODO(backend): this classifies on the human-readable message because that
- * is all `ApiErrorBody` carries today. It should classify on a stable
- * machine-readable field — add `reason: "EXPIRED" | "NOT_YET_VALID" |
- * "ALREADY_USED" | "NOT_FOUND"` to the error body and switch on that. String
- * matching breaks the moment someone rewords a server message.
+ * Classifies on `ApiError.reason`, the stable machine-readable field the
+ * backend's CheckInRejectedException now sets (EXPIRED / NOT_YET_VALID /
+ * ALREADY_USED / NOT_FOUND) — not on the human-readable message, which can
+ * be reworded without notice. A missing/unrecognized reason (e.g. before
+ * USE_SHORT_CODE_FIELD is flipped, when a typed code is sent as qrToken and
+ * rejected by the older, unclassified path) falls back to "not found",
+ * matching that path's honest "doesn't match" behaviour.
  *
  * Note what is deliberately NOT distinguished: "no such code at this
- * property" and "no such code anywhere" are the same answer, and nothing
- * ever indicates which digit was wrong. Otherwise the error text becomes an
- * enumeration oracle for a six-digit space.
+ * property" and "no such code anywhere" are the same answer (the backend
+ * only ever looks at the guard's own property), and nothing ever indicates
+ * which digit was wrong. Otherwise the error text becomes an enumeration
+ * oracle for a six-digit space.
  */
 function classifyCodeError(err: unknown, code: string): CodeOutcome {
+  const reason = err instanceof ApiError ? err.reason : undefined;
   const raw = err instanceof ApiError ? err.message : "Check-in failed";
-  const m = raw.toLowerCase();
   const spaced = formatCode(code);
 
-  if (m.includes("expired") || m.includes("not yet valid") || m.includes("valid from") || m.includes("valid until")) {
-    return { kind: "expired", heading: "That code expired", detail: raw };
+  switch (reason) {
+    case "EXPIRED":
+    case "NOT_YET_VALID":
+      return { kind: "expired", heading: "That code expired", detail: raw };
+    case "ALREADY_USED":
+      return { kind: "used", heading: "That code was already used", detail: raw };
+    case "NOT_FOUND":
+    default:
+      return {
+        kind: "notfound",
+        heading: "No invitation with that code",
+        detail: `Nothing at this property matches ${spaced} right now. Check it with the visitor, or log a walk-in.`,
+      };
   }
-  if (m.includes("already") || m.includes("used") || m.includes("checked in")) {
-    return { kind: "used", heading: "That code was already used", detail: raw };
-  }
-  return {
-    kind: "notfound",
-    heading: "No invitation with that code",
-    detail: `Nothing at this property matches ${spaced} right now. Check it with the visitor, or log a walk-in.`,
-  };
 }
 
 /** 417302 -> "417 302". The triple grouping is how the code is spoken. */

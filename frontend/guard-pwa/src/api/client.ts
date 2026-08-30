@@ -10,9 +10,11 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  reason?: ApiErrorBody["reason"];
+  constructor(status: number, message: string, reason?: ApiErrorBody["reason"]) {
     super(message);
     this.status = status;
+    this.reason = reason;
   }
 }
 
@@ -55,7 +57,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
   if (!response.ok) {
     const body = data as ApiErrorBody | undefined;
-    throw new ApiError(response.status, body?.error ?? `Request failed with status ${response.status}`);
+    throw new ApiError(response.status, body?.error ?? `Request failed with status ${response.status}`, body?.reason);
   }
 
   return data as T;

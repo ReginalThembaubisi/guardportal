@@ -59,6 +59,14 @@ public class Invitation {
     @Column(name = "qr_token", nullable = false, unique = true, length = 36)
     private String qrToken;
 
+    /**
+     * Not globally unique (see V13__add_invitation_short_code.sql) — uniqueness
+     * is scoped to overlapping-and-PENDING invitations at the same property,
+     * enforced in InvitationService at generation time.
+     */
+    @Column(name = "short_code", nullable = false, length = 6)
+    private String shortCode;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private InvitationStatus status = InvitationStatus.PENDING;

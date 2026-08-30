@@ -219,4 +219,6 @@ export interface ApiErrorBody {
   status: number;
   error: string;
   timestamp?: string;
+  /** Present on check-in rejections only (see CheckInRejectedException) — a stable field to switch on instead of parsing `error`. */
+  reason?: "EXPIRED" | "NOT_YET_VALID" | "ALREADY_USED" | "NOT_FOUND";
 }
