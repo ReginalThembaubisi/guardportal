@@ -1106,8 +1106,7 @@ form button[type="submit"]:disabled {
 
 .primary-action-sub {
   font-family: var(--mono);
-  font-size: 10.5px;
-  opacity: 0.72;
+  font-size: 11px;
 }
 
 .secondary-pair {
