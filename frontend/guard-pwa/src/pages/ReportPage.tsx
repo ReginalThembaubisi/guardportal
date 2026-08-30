@@ -16,9 +16,9 @@ const SEVERITY_COLOR: Record<IncidentSeverity, string> = {
 
 const SEVERITY_LABEL: Record<IncidentSeverity, string> = {
   LOW: "Low",
-  MEDIUM: "Med",
+  MEDIUM: "Medium",
   HIGH: "High",
-  CRITICAL: "Crit",
+  CRITICAL: "Critical",
 };
 
 /** Rare, but urgent — a guard reaching for this is already in a bad moment, so it's a permanent tab, never behind a drawer. */
@@ -85,7 +85,7 @@ export default function ReportPage() {
           </label>
           <label>
             Severity
-            <div className="segmented-control cols-4" role="radiogroup">
+            <div className="severity-grid" role="radiogroup">
               {SEVERITIES.map((s) => (
                 <button
                   key={s}

@@ -255,6 +255,7 @@ export default function GatePage() {
 
                 <input
                   type="search"
+                  className="sticky-search"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search by name or vehicle reg to check out fast"
