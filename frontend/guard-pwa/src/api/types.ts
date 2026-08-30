@@ -139,6 +139,40 @@ export interface CheckpointScanResponse {
   createdAt: string;
 }
 
+export interface PatrolRouteCheckpointStop {
+  checkpointId: number;
+  name: string;
+  sequenceOrder: number;
+}
+
+export interface PatrolRouteResponse {
+  id: number;
+  propertyId: number;
+  name: string;
+  checkpoints: PatrolRouteCheckpointStop[];
+  createdAt: string;
+}
+
+export interface MissedCheckpointStatus {
+  checkpointId: number;
+  name: string;
+  sequenceOrder: number;
+  scanned: boolean;
+  scanCount: number;
+  firstScanAt: string | null;
+  lastScanAt: string | null;
+  distanceMeters: number | null;
+  withinTolerance: boolean | null;
+}
+
+export interface MissedCheckpointResponse {
+  routeId: number;
+  routeName: string;
+  from: string;
+  to: string;
+  checkpoints: MissedCheckpointStatus[];
+}
+
 export type IncidentSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
 export type IncidentStatus = "OPEN" | "INVESTIGATING" | "RESOLVED";
 

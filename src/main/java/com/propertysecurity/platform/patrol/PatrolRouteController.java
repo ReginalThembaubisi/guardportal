@@ -34,8 +34,15 @@ public class PatrolRouteController {
         return PatrolRouteResponse.from(created.route(), created.stops());
     }
 
-    /** Scoped to the caller's own managed properties (ADMIN unrestricted) — needed to pick a route for missed-checkpoint status. */
+    /**
+     * Scoped to the caller's own managed properties (ADMIN unrestricted) —
+     * needed to pick a route for missed-checkpoint status. Also
+     * guard-accessible: a guard needs to discover their own property's
+     * route(s) to show patrol progress, with no separate "my route"
+     * endpoint.
+     */
     @GetMapping
+    @PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'ADMIN', 'GUARD')")
     public List<PatrolRouteResponse> listByProperty(Authentication authentication, @RequestParam Long propertyId) {
         Long callerUserId = (Long) authentication.getPrincipal();
         return patrolRouteService.listByPropertyForCaller(callerUserId, propertyId).stream()

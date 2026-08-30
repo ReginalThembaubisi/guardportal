@@ -4,6 +4,8 @@ import com.propertysecurity.platform.checkpoint.Checkpoint;
 import com.propertysecurity.platform.checkpoint.CheckpointRepository;
 import com.propertysecurity.platform.exception.BadRequestException;
 import com.propertysecurity.platform.exception.ResourceNotFoundException;
+import com.propertysecurity.platform.guard.Guard;
+import com.propertysecurity.platform.guard.GuardRepository;
 import com.propertysecurity.platform.patrol.dto.PatrolRouteRequest;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.property.PropertyRepository;
@@ -17,6 +19,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /** Route composition — not audited, same reasoning as CheckpointService. */
@@ -30,6 +33,7 @@ public class PatrolRouteService {
     private final CheckpointRepository checkpointRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyManagerRepository propertyManagerRepository;
+    private final GuardRepository guardRepository;
 
     public record Created(PatrolRoute route, List<PatrolRouteCheckpoint> stops) {
     }
@@ -103,8 +107,22 @@ public class PatrolRouteService {
         return patrolRouteRepository.findAllByProperty_IdAndDeletedAtIsNull(propertyId);
     }
 
-    /** Same idiom as PropertyUnitService.assertCanAccessProperty. */
+    /**
+     * A guard caller must match the target property exactly (same idiom as
+     * PatrolService.assertCanAccessProperty) — this used to silently permit
+     * any non-property-manager caller through unchecked, harmless only
+     * because GUARD was fully blocked at the controller level before it
+     * needed to list routes for its own patrol-progress screen.
+     */
     private void assertCanAccessProperty(Long callerUserId, Long propertyId) {
+        Optional<Guard> guard = guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (guard.isPresent()) {
+            if (!guard.get().getProperty().getId().equals(propertyId)) {
+                throw new AccessDeniedException("This property is not yours");
+            }
+            return;
+        }
+
         boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
         if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
             throw new AccessDeniedException("This property is not yours");

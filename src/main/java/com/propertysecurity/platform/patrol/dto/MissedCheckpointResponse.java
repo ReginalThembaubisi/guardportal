@@ -17,7 +17,9 @@ public record MissedCheckpointResponse(
             boolean scanned,
             int scanCount,
             LocalDateTime firstScanAt,
-            LocalDateTime lastScanAt
+            LocalDateTime lastScanAt,
+            Integer distanceMeters,
+            Boolean withinTolerance
     ) {
     }
 }

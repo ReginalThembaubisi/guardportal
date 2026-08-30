@@ -115,10 +115,13 @@ public class PatrolService {
                 .map(stop -> {
                     List<CheckpointScan> checkpointScans = scansByCheckpoint.getOrDefault(stop.getCheckpoint().getId(), List.of());
                     LocalDateTime first = checkpointScans.isEmpty() ? null : checkpointScans.get(0).getScannedAt();
-                    LocalDateTime last = checkpointScans.isEmpty() ? null : checkpointScans.get(checkpointScans.size() - 1).getScannedAt();
+                    CheckpointScan lastScan = checkpointScans.isEmpty() ? null : checkpointScans.get(checkpointScans.size() - 1);
                     return new MissedCheckpointResponse.CheckpointStatus(
                             stop.getCheckpoint().getId(), stop.getCheckpoint().getName(), stop.getSequenceOrder(),
-                            !checkpointScans.isEmpty(), checkpointScans.size(), first, last);
+                            !checkpointScans.isEmpty(), checkpointScans.size(),
+                            first, lastScan != null ? lastScan.getScannedAt() : null,
+                            lastScan != null ? lastScan.getDistanceMeters() : null,
+                            lastScan != null ? lastScan.getWithinTolerance() : null);
                 })
                 .toList();
 

@@ -1,32 +1,55 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
-import CheckInPage from "./pages/CheckInPage";
-import CheckpointScanPage from "./pages/CheckpointScanPage";
-import ClockPage from "./pages/ClockPage";
+import GatePage from "./pages/GatePage";
+import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
-import OccupancyPage from "./pages/OccupancyPage";
+import MePage from "./pages/MePage";
+import PatrolPage from "./pages/PatrolPage";
+import ReportPage from "./pages/ReportPage";
 import WalkInPage from "./pages/WalkInPage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
-import ReportIncidentPage from "./pages/ReportIncidentPage";
-import MyShiftsPage from "./pages/MyShiftsPage";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
       <Route
-        path="/clock"
+        path="/home"
         element={
           <ProtectedRoute>
-            <ClockPage />
+            <HomePage />
           </ProtectedRoute>
         }
       />
       <Route
-        path="/checkin"
+        path="/gate"
         element={
           <ProtectedRoute>
-            <CheckInPage />
+            <GatePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/patrol"
+        element={
+          <ProtectedRoute>
+            <PatrolPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/report"
+        element={
+          <ProtectedRoute>
+            <ReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/me"
+        element={
+          <ProtectedRoute>
+            <MePage />
           </ProtectedRoute>
         }
       />
@@ -39,22 +62,6 @@ export default function App() {
         }
       />
       <Route
-        path="/scan"
-        element={
-          <ProtectedRoute>
-            <CheckpointScanPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/occupancy"
-        element={
-          <ProtectedRoute>
-            <OccupancyPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/vehicle-history"
         element={
           <ProtectedRoute>
@@ -62,22 +69,15 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route
-        path="/report-incident"
-        element={
-          <ProtectedRoute>
-            <ReportIncidentPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/shifts"
-        element={
-          <ProtectedRoute>
-            <MyShiftsPage />
-          </ProtectedRoute>
-        }
-      />
+
+      {/* Old routes, kept resolving for any bookmarked or in-flight link. */}
+      <Route path="/clock" element={<Navigate to="/home" replace />} />
+      <Route path="/checkin" element={<Navigate to="/gate?segment=checkin" replace />} />
+      <Route path="/occupancy" element={<Navigate to="/gate?segment=onsite" replace />} />
+      <Route path="/scan" element={<Navigate to="/patrol" replace />} />
+      <Route path="/report-incident" element={<Navigate to="/report" replace />} />
+      <Route path="/shifts" element={<Navigate to="/me" replace />} />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -4,7 +4,8 @@ import type { VisitorEntryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 
-export default function VehicleHistoryPage() {
+/** No Layout wrapper — reused both as its own route and inside Gate's Vehicles segment. */
+export function VehicleHistoryContent() {
   const { auth } = useAuth();
   const [registration, setRegistration] = useState("");
   const [entries, setEntries] = useState<VisitorEntryResponse[] | null>(null);
@@ -30,7 +31,7 @@ export default function VehicleHistoryPage() {
   }
 
   return (
-    <Layout title="Vehicle History">
+    <>
       {error && <p className="error">{error}</p>}
 
       <form onSubmit={search}>
@@ -72,6 +73,14 @@ export default function VehicleHistoryPage() {
           </ul>
         </section>
       )}
+    </>
+  );
+}
+
+export default function VehicleHistoryPage() {
+  return (
+    <Layout title="Vehicle History">
+      <VehicleHistoryContent />
     </Layout>
   );
 }
