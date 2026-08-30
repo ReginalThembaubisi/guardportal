@@ -285,12 +285,17 @@ public class VisitorEntryService {
     /**
      * Incident-investigation lookup: "who visited on [day/range]" — the
      * literal digital equivalent of flipping a paper register to a date.
-     * Deliberately not GUARD-facing (guards get current occupancy, not a
-     * history browser) and deliberately not CLIENT-facing (an open-ended
-     * per-visitor browsing tool for a property owner is a real privacy
-     * concern distinct from a scoped incident lookup — see PRODUCT.md/this
-     * conversation's decision). Scoped like IncidentService.
-     * assertCanAccessProperty: a property manager to properties they
+     * Deliberately not CLIENT-facing (an open-ended per-visitor browsing
+     * tool for a property owner is a real privacy concern distinct from a
+     * scoped incident lookup — see PRODUCT.md/this conversation's
+     * decision). GUARD was excluded the same way until 2026-08-30 — a
+     * guard couldn't see who'd already checked out earlier in their own
+     * shift once they dropped off the occupancy list, a real operational
+     * gap (dev-confirmed) distinct from PROPERTY_MANAGER/SUPERVISOR's
+     * open-ended range. Opened for GUARD, but strictly narrower: today
+     * only (enforced here, not just left to the frontend), own property
+     * only. assertCanAccessPropertyForHistory: a guard to their own
+     * property and today only, a property manager to properties they
      * manage, a supervisor to properties they supervise, ADMIN unrestricted.
      */
     @Transactional(readOnly = true)
@@ -301,14 +306,26 @@ public class VisitorEntryService {
         if (to.isBefore(from)) {
             throw new BadRequestException("The end date can't be before the start date");
         }
-        assertCanAccessPropertyForHistory(callerUserId, propertyId);
+        assertCanAccessPropertyForHistory(callerUserId, propertyId, from, to);
 
         LocalDateTime fromInclusive = from.atStartOfDay();
         LocalDateTime toExclusive = to.plusDays(1).atStartOfDay();
         return visitorEntryRepository.findAllByProperty_IdAndEnteredAtBetween(propertyId, fromInclusive, toExclusive);
     }
 
-    private void assertCanAccessPropertyForHistory(Long callerUserId, Long propertyId) {
+    private void assertCanAccessPropertyForHistory(Long callerUserId, Long propertyId, LocalDate from, LocalDate to) {
+        Optional<Guard> guard = guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (guard.isPresent()) {
+            if (!guard.get().getProperty().getId().equals(propertyId)) {
+                throw new AccessDeniedException("This property is not yours");
+            }
+            LocalDate today = LocalDate.now();
+            if (!from.isEqual(today) || !to.isEqual(today)) {
+                throw new AccessDeniedException("Guards can only view today's history");
+            }
+            return;
+        }
+
         boolean isAnyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
         boolean isAnySupervisor = propertySupervisorRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
         if (!isAnyManager && !isAnySupervisor) {

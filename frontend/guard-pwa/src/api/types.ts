@@ -29,6 +29,21 @@ export interface VisitorEntryResponse {
   createdAt: string;
 }
 
+/** Today-only slice of the incident-investigation history endpoint — the backend enforces "today, own property" regardless of what's requested. */
+export interface VisitorHistoryEntryResponse {
+  id: number;
+  visitorName: string;
+  visitorPhone: string | null;
+  unitId: number | null;
+  unitNumber: string | null;
+  category: VisitorCategory;
+  approvalStatus: ApprovalStatus;
+  vehicleRegistration: string | null;
+  enteredAt: string;
+  exitedAt: string | null;
+  notes: string | null;
+}
+
 export interface VisitorCheckInResponse {
   id: number;
   propertyId: number;

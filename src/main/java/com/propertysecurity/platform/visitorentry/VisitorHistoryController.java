@@ -25,13 +25,16 @@ import java.util.List;
  * closes is that nothing else in the system lets a property manager or
  * supervisor look at visitor entries by date; the only existing history
  * views are current-occupancy (right now, not a range) and vehicle-plate
- * search (useless without a plate). Not GUARD-facing, not CLIENT-facing —
- * see VisitorEntryService.historyForDateRange for why.
+ * search (useless without a plate). Not CLIENT-facing — see
+ * VisitorEntryService.historyForDateRange for why. GUARD is allowed at
+ * this same gate, but VisitorEntryService.assertCanAccessPropertyForHistory
+ * enforces a much narrower slice for them (today only, own property only)
+ * than the open-ended range PROPERTY_MANAGER/SUPERVISOR/ADMIN get.
  */
 @RestController
 @RequestMapping("/api/v1/properties/{propertyId}/visitor-entries/history")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'SUPERVISOR', 'ADMIN')")
+@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'SUPERVISOR', 'GUARD', 'ADMIN')")
 public class VisitorHistoryController {
 
     private final VisitorEntryService visitorEntryService;

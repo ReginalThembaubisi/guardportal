@@ -7,6 +7,7 @@ import type {
   VisitorCheckInResponse,
   VisitorCheckOutResponse,
   VisitorEntryResponse,
+  VisitorHistoryEntryResponse,
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
@@ -37,6 +38,7 @@ export default function GatePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [exitingId, setExitingId] = useState<number | null>(null);
   const [lastCheckOut, setLastCheckOut] = useState<VisitorCheckOutResponse | null>(null);
+  const [checkedOutToday, setCheckedOutToday] = useState<VisitorHistoryEntryResponse[] | null>(null);
 
   const [vehicleRegistration, setVehicleRegistration] = useState("");
   const [qrToken, setQrToken] = useState("");
@@ -53,6 +55,29 @@ export default function GatePage() {
   }, [auth]);
 
   useEffect(loadOccupancy, [loadOccupancy]);
+
+  /**
+   * Once someone's checked out they drop off the occupancy list entirely
+   * (correctly — that list is current-on-site only), which left guards
+   * with no way to confirm "did so-and-so already leave today." The
+   * backend enforces today-only/own-property regardless of what's asked
+   * for here, so this can't be widened into a real history browser just
+   * by editing the frontend.
+   */
+  const loadTodayHistory = useCallback(() => {
+    if (!auth || auth.propertyId === null) return;
+    const today = new Date().toLocaleDateString("en-CA");
+    apiFetch<VisitorHistoryEntryResponse[]>(
+      `/api/v1/properties/${auth.propertyId}/visitor-entries/history?from=${today}&to=${today}`,
+      { token: auth.token },
+    )
+      .then((entries) => setCheckedOutToday(entries.filter((e) => e.exitedAt !== null)))
+      .catch(() => {
+        // Non-fatal — the "checked out today" section just won't show.
+      });
+  }, [auth]);
+
+  useEffect(loadTodayHistory, [loadTodayHistory]);
 
   async function submitCheckIn(token: string) {
     if (!auth || checkInBusy) return;
@@ -91,6 +116,7 @@ export default function GatePage() {
       });
       setLastCheckOut(result);
       loadOccupancy();
+      loadTodayHistory();
     } catch (err) {
       setOccupancyError(err instanceof ApiError ? err.message : "Failed to check visitor out");
     } finally {
@@ -285,6 +311,34 @@ export default function GatePage() {
                         </section>
                       );
                     })}
+                  </div>
+                )}
+
+                {!trimmedQuery && checkedOutToday && (
+                  <div>
+                    <span className="eyebrow">Checked out today</span>
+                    <div className="row-list" style={{ marginTop: 8 }}>
+                      {checkedOutToday.length === 0 ? (
+                        <p className="empty" style={{ padding: 14 }}>
+                          No one has checked out yet today.
+                        </p>
+                      ) : (
+                        checkedOutToday.map((entry) => (
+                          <div key={entry.id} className="row-list-item">
+                            <span className="row-list-item-title">{entry.visitorName}</span>
+                            <span className="row-list-item-detail">
+                              {entry.category}
+                              {entry.vehicleRegistration && ` · ${entry.vehicleRegistration}`}
+                              {" · in "}
+                              {new Date(entry.enteredAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                              {" · out "}
+                              {entry.exitedAt &&
+                                new Date(entry.exitedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 )}
               </>
