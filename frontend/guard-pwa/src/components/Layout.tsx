@@ -2,14 +2,30 @@ import { useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-const MORE_ROUTES = ["/walk-in", "/vehicle-history", "/report-incident", "/shifts"];
+/**
+ * Everything that isn't one of the three most-reached-for actions (Clock,
+ * Check in, Checkpoint). On phone width these live behind the hamburger
+ * drawer so the bottom bar stays down to a true minimum instead of a row of
+ * five-plus cramped tabs. On wider screens there's no thumb-zone constraint
+ * and plenty of room, so the same items render directly in the sidebar
+ * (see the `nav-item-secondary`/`nav-item-menu` display rules in index.css)
+ * and the hamburger never appears.
+ */
+const SECONDARY_ITEMS: { path: string; label: string }[] = [
+  { path: "/occupancy", label: "Occupancy" },
+  { path: "/walk-in", label: "Walk-in" },
+  { path: "/vehicle-history", label: "Vehicle History" },
+  { path: "/report-incident", label: "Report Incident" },
+  { path: "/shifts", label: "My Shifts" },
+];
+const SECONDARY_ROUTES = SECONDARY_ITEMS.map((item) => item.path);
 
 export default function Layout({ title, children }: { title: string; children: ReactNode }) {
   const { auth, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [moreOpen, setMoreOpen] = useState(false);
-  const onMoreRoute = MORE_ROUTES.includes(location.pathname);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const onSecondaryRoute = SECONDARY_ROUTES.includes(location.pathname);
 
   function handleLogout() {
     logout();
@@ -17,8 +33,16 @@ export default function Layout({ title, children }: { title: string; children: R
   }
 
   function goTo(path: string) {
-    setMoreOpen(false);
+    setMenuOpen(false);
     navigate(path);
+  }
+
+  function navLinkClass({ isActive }: { isActive: boolean }) {
+    return isActive ? "nav-item active" : "nav-item";
+  }
+
+  function secondaryNavLinkClass({ isActive }: { isActive: boolean }) {
+    return isActive ? "nav-item nav-item-secondary active" : "nav-item nav-item-secondary";
   }
 
   return (
@@ -41,48 +65,54 @@ export default function Layout({ title, children }: { title: string; children: R
       </header>
       <main>{children}</main>
 
-      {moreOpen && (
+      {/* Only ever opened from the hamburger tile, which CSS hides above
+          phone width — so this never opens on a screen where the sidebar
+          already lists everything directly. */}
+      {menuOpen && (
         <>
-          <div className="nav-sheet-backdrop" onClick={() => setMoreOpen(false)} />
-          <div className="nav-sheet">
-            <button type="button" className="nav-sheet-item" onClick={() => goTo("/walk-in")}>
-              Walk-in
-            </button>
-            <button type="button" className="nav-sheet-item" onClick={() => goTo("/vehicle-history")}>
-              Vehicles
-            </button>
-            <button type="button" className="nav-sheet-item" onClick={() => goTo("/report-incident")}>
-              Incident
-            </button>
-            <button type="button" className="nav-sheet-item" onClick={() => goTo("/shifts")}>
-              My Shifts
-            </button>
-            <button type="button" className="nav-sheet-cancel" onClick={() => setMoreOpen(false)}>
-              Cancel
-            </button>
+          <div className="nav-drawer-backdrop" onClick={() => setMenuOpen(false)} />
+          <div className="nav-drawer">
+            <div className="nav-drawer-header">
+              <span>Menu</span>
+              <button type="button" className="nav-drawer-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+                ×
+              </button>
+            </div>
+            {SECONDARY_ITEMS.map((item) => (
+              <button key={item.path} type="button" className="nav-drawer-item" onClick={() => goTo(item.path)}>
+                {item.label}
+              </button>
+            ))}
           </div>
         </>
       )}
 
       <nav className="bottom-nav">
-        <NavLink to="/clock" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+        <NavLink to="/clock" className={navLinkClass}>
           Clock
         </NavLink>
-        <NavLink to="/checkin" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+        <NavLink to="/checkin" className={navLinkClass}>
           Check in
         </NavLink>
-        <NavLink to="/scan" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
+        <NavLink to="/scan" className={navLinkClass}>
           Checkpoint
         </NavLink>
-        <NavLink to="/occupancy" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
-          Occupancy
-        </NavLink>
+        {SECONDARY_ITEMS.map((item) => (
+          <NavLink key={item.path} to={item.path} className={secondaryNavLinkClass}>
+            {item.label}
+          </NavLink>
+        ))}
         <button
           type="button"
-          className={onMoreRoute ? "nav-item active" : "nav-item"}
-          onClick={() => setMoreOpen(true)}
+          className={onSecondaryRoute ? "nav-item nav-item-menu active" : "nav-item nav-item-menu"}
+          onClick={() => setMenuOpen(true)}
+          aria-label="More"
         >
-          More
+          <span className="hamburger-icon" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
         </button>
       </nav>
     </div>
