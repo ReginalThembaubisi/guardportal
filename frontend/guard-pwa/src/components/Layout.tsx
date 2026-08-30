@@ -3,16 +3,19 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 /**
- * Everything that isn't one of the three most-reached-for actions (Clock,
- * Check in, Checkpoint). On phone width these live behind the hamburger
- * drawer so the bottom bar stays down to a true minimum instead of a row of
- * five-plus cramped tabs. On wider screens there's no thumb-zone constraint
- * and plenty of room, so the same items render directly in the sidebar
- * (see the `nav-item-secondary`/`nav-item-menu` display rules in index.css)
- * and the hamburger never appears.
+ * Everything that isn't one of the three most-reached-for actions (Check in,
+ * Check out, Checkpoint — all done many times a shift). Clock lives here
+ * too now: it only happens twice a shift, so it doesn't earn one of the
+ * three precious always-visible slots even though it's important. On phone
+ * width these live behind the hamburger drawer so the bottom bar stays down
+ * to a true minimum instead of a row of five-plus cramped tabs. On wider
+ * screens there's no thumb-zone constraint and plenty of room, so the same
+ * items render directly in the sidebar (see the
+ * `nav-item-secondary`/`nav-item-menu` display rules in index.css) and the
+ * hamburger never appears.
  */
 const SECONDARY_ITEMS: { path: string; label: string }[] = [
-  { path: "/occupancy", label: "Occupancy" },
+  { path: "/clock", label: "Clock" },
   { path: "/walk-in", label: "Walk-in" },
   { path: "/vehicle-history", label: "Vehicle History" },
   { path: "/report-incident", label: "Report Incident" },
@@ -88,11 +91,11 @@ export default function Layout({ title, children }: { title: string; children: R
       )}
 
       <nav className="bottom-nav">
-        <NavLink to="/clock" className={navLinkClass}>
-          Clock
-        </NavLink>
         <NavLink to="/checkin" className={navLinkClass}>
           Check in
+        </NavLink>
+        <NavLink to="/occupancy" className={navLinkClass}>
+          Check out
         </NavLink>
         <NavLink to="/scan" className={navLinkClass}>
           Checkpoint

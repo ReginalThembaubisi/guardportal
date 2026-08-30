@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { OccupancyResponse, VisitorCategory, VisitorCheckOutResponse } from "../api/types";
+import type { OccupancyResponse, VisitorCategory, VisitorCheckOutResponse, VisitorEntryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 import Seal from "../components/Seal";
@@ -11,6 +11,7 @@ export default function OccupancyPage() {
   const { auth, setPropertyId } = useAuth();
   const [propertyIdInput, setPropertyIdInput] = useState("");
   const [occupancy, setOccupancy] = useState<OccupancyResponse | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [exitingId, setExitingId] = useState<number | null>(null);
   const [lastCheckOut, setLastCheckOut] = useState<VisitorCheckOutResponse | null>(null);
@@ -55,7 +56,7 @@ export default function OccupancyPage() {
 
   if (!auth || auth.propertyId === null) {
     return (
-      <Layout title="Occupancy">
+      <Layout title="Check Out">
         <p className="empty">
           Your property hasn't been detected yet — it's picked up automatically after your first check-in. You can
           also enter it directly if you know it:
@@ -77,8 +78,46 @@ export default function OccupancyPage() {
     );
   }
 
+  const trimmedQuery = searchQuery.trim().toLowerCase();
+  // Searching flattens every category into one list — finding a specific
+  // person shouldn't require knowing (or checking) which category they're
+  // filed under.
+  const searchResults: VisitorEntryResponse[] = trimmedQuery
+    ? CATEGORIES.flatMap((category) => occupancy?.byCategory[category] ?? []).filter(
+        (entry) =>
+          entry.visitorName.toLowerCase().includes(trimmedQuery) ||
+          (entry.vehicleRegistration ?? "").toLowerCase().includes(trimmedQuery),
+      )
+    : [];
+
+  function entryRow(entry: VisitorEntryResponse) {
+    return (
+      <li key={entry.id}>
+        <div className="entry-row">
+          <div>
+            <strong>{entry.visitorName}</strong>
+            <span className="entry-meta">
+              {entry.vehicleRegistration && (
+                <>
+                  {" "}
+                  · {entry.vehicleRegistration}
+                  {entry.vehicleRecognized && <span className="badge recognized"> recognized</span>}
+                </>
+              )}
+              {" · entered "}
+              {new Date(entry.enteredAt).toLocaleTimeString()}
+            </span>
+          </div>
+          <button className="exit-button" onClick={() => handleExit(entry.id)} disabled={exitingId === entry.id}>
+            {exitingId === entry.id ? "Checking out…" : "Check out"}
+          </button>
+        </div>
+      </li>
+    );
+  }
+
   return (
-    <Layout title="Occupancy">
+    <Layout title="Check Out">
       {error && <p className="error">{error}</p>}
 
       {lastCheckOut && (
@@ -118,51 +157,37 @@ export default function OccupancyPage() {
             </button>
           </div>
 
-          <div className="occupancy-grid">
-            {CATEGORIES.map((category) => {
-              const entries = occupancy.byCategory[category] ?? [];
-              return (
-                <section key={category} className="occupancy-category">
-                  <h2>
-                    {category} <span className="count-badge">{entries.length}</span>
-                  </h2>
-                  {entries.length === 0 ? (
-                    <p className="empty">None</p>
-                  ) : (
-                    <ul>
-                      {entries.map((entry) => (
-                        <li key={entry.id}>
-                          <div className="entry-row">
-                            <div>
-                              <strong>{entry.visitorName}</strong>
-                              <span className="entry-meta">
-                                {entry.vehicleRegistration && (
-                                  <>
-                                    {" "}
-                                    · {entry.vehicleRegistration}
-                                    {entry.vehicleRecognized && <span className="badge recognized"> recognized</span>}
-                                  </>
-                                )}
-                                {" · entered "}
-                                {new Date(entry.enteredAt).toLocaleTimeString()}
-                              </span>
-                            </div>
-                            <button
-                              className="exit-button"
-                              onClick={() => handleExit(entry.id)}
-                              disabled={exitingId === entry.id}
-                            >
-                              {exitingId === entry.id ? "Checking out…" : "Check out"}
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              );
-            })}
-          </div>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by name or vehicle reg to check out fast"
+            autoFocus
+          />
+
+          {trimmedQuery ? (
+            <section className="occupancy-category" style={{ marginTop: 16 }}>
+              {searchResults.length === 0 ? (
+                <p className="empty">No one on site matches "{searchQuery.trim()}".</p>
+              ) : (
+                <ul>{searchResults.map(entryRow)}</ul>
+              )}
+            </section>
+          ) : (
+            <div className="occupancy-grid">
+              {CATEGORIES.map((category) => {
+                const entries = occupancy.byCategory[category] ?? [];
+                return (
+                  <section key={category} className="occupancy-category">
+                    <h2>
+                      {category} <span className="count-badge">{entries.length}</span>
+                    </h2>
+                    {entries.length === 0 ? <p className="empty">None</p> : <ul>{entries.map(entryRow)}</ul>}
+                  </section>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
     </Layout>

@@ -27,7 +27,10 @@ export default function LoginPage() {
         return;
       }
       login(response);
-      navigate("/clock");
+      // Check-in, not Clock, is the landing page — it's the single most
+      // time-sensitive action (someone's often waiting) and has no
+      // open-shift dependency, unlike clock-in which happens twice a shift.
+      navigate("/checkin");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Login failed");
     } finally {
