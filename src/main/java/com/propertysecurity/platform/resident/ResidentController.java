@@ -24,7 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/residents")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'CLIENT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'ADMIN')")
 public class ResidentController {
 
     private final ResidentService residentService;

@@ -5,8 +5,7 @@ import CreateInvitationPage from "./pages/CreateInvitationPage";
 import PendingInvitationsPage from "./pages/PendingInvitationsPage";
 import VehicleRegistrationPage from "./pages/VehicleRegistrationPage";
 import OccupancyDashboardPage from "./pages/OccupancyDashboardPage";
-import CreateResidentPage from "./pages/CreateResidentPage";
-import ClientResidentsPage from "./pages/ClientResidentsPage";
+import ResidentsPage from "./pages/ResidentsPage";
 import CreateCheckpointPage from "./pages/CreateCheckpointPage";
 import CreatePatrolRoutePage from "./pages/CreatePatrolRoutePage";
 import PatrolStatusPage from "./pages/PatrolStatusPage";
@@ -66,18 +65,10 @@ export default function App() {
         }
       />
       <Route
-        path="/residents/new"
-        element={
-          <ProtectedRoute role="PROPERTY_MANAGER">
-            <CreateResidentPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/residents"
         element={
-          <ProtectedRoute role="CLIENT">
-            <ClientResidentsPage />
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <ResidentsPage />
           </ProtectedRoute>
         }
       />
@@ -108,7 +99,7 @@ export default function App() {
       <Route
         path="/guards/new"
         element={
-          <ProtectedRoute role="PROPERTY_MANAGER">
+          <ProtectedRoute role="SUPERVISOR">
             <CreateGuardPage />
           </ProtectedRoute>
         }

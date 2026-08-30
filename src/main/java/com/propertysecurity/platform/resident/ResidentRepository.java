@@ -11,11 +11,11 @@ public interface ResidentRepository extends JpaRepository<Resident, Long> {
 
     // JOIN FETCH so callers can read user/unit/property fields after the
     // transaction ends (open-in-view is disabled) — same idiom as
-    // PropertyManagerRepository/PropertyClientRepository.
+    // PropertyManagerRepository.
     @Query("select r from Resident r join fetch r.user join fetch r.unit u join fetch u.property where r.deletedAt is null")
     List<Resident> findAllByDeletedAtIsNull();
 
-    /** Scoped listing for a property manager or client — only residents on properties they're linked to. */
+    /** Scoped listing for a property manager — only residents on properties they're linked to. */
     @Query("select r from Resident r join fetch r.user join fetch r.unit u join fetch u.property where u.property.id in :propertyIds and r.deletedAt is null")
     List<Resident> findAllByUnit_Property_IdInAndDeletedAtIsNull(@Param("propertyIds") List<Long> propertyIds);
 

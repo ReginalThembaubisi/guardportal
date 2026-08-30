@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { apiFetch, ApiError } from "../api/client";
 import type {
-  PropertyClientResponse,
+  PropertyManagerResponse,
   ResidentImportResponse,
   ResidentImportRow,
   ResidentResponse,
@@ -123,9 +123,16 @@ function residentsToCsv(list: ResidentResponse[]): string {
   return [header, ...rows].join("\n") + "\n";
 }
 
-export default function ClientResidentsPage() {
+/**
+ * Resident roster management for the property manager — the person who
+ * actually runs day-to-day building operations. Previously lived under a
+ * separate CLIENT (property owner) role; moved here 2026-08-28 since
+ * adding/removing residents is property-manager work, not something the
+ * owner does hands-on. See V10__drop_property_client.sql.
+ */
+export default function ResidentsPage() {
   const { auth } = useAuth();
-  const [properties, setProperties] = useState<PropertyClientResponse[] | null>(null);
+  const [properties, setProperties] = useState<PropertyManagerResponse[] | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
   const [units, setUnits] = useState<UnitResponse[] | null>(null);
   const [residents, setResidents] = useState<ResidentResponse[] | null>(null);
@@ -146,7 +153,7 @@ export default function ClientResidentsPage() {
 
   useEffect(() => {
     if (!auth) return;
-    apiFetch<PropertyClientResponse[]>("/api/v1/property-clients/mine", { token: auth.token })
+    apiFetch<PropertyManagerResponse[]>("/api/v1/property-managers/mine", { token: auth.token })
       .then((props) => {
         setProperties(props);
         if (props.length > 0) setSelectedPropertyId(props[0].propertyId);
@@ -176,7 +183,7 @@ export default function ClientResidentsPage() {
 
   useEffect(loadResidents, [auth]);
 
-  // The API returns every resident across all properties this client owns —
+  // The API returns every resident across all properties this manager runs —
   // narrow to whichever property is currently selected using the unit ids
   // already scoped to it (ResidentResponse doesn't carry a propertyId itself).
   const unitIdsForSelectedProperty = new Set((units ?? []).map((u) => u.id));

@@ -44,11 +44,8 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Dashboard
           </NavLink>
-          <NavLink to="/residents/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Add Resident
-          </NavLink>
-          <NavLink to="/guards/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Add Guard
+          <NavLink to="/residents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Residents
           </NavLink>
           <NavLink to="/checkpoints/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Add Checkpoint
@@ -70,15 +67,11 @@ export default function Layout({ title, children }: { title: string; children: R
           </NavLink>
         </nav>
       )}
-      {hasRole("CLIENT") && (
-        <nav className="top-nav">
-          <NavLink to="/residents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Residents
-          </NavLink>
-        </nav>
-      )}
       {hasRole("SUPERVISOR") && (
         <nav className="top-nav">
+          <NavLink to="/guards/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Add Guard
+          </NavLink>
           <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Incidents
           </NavLink>

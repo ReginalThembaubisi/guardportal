@@ -14,12 +14,14 @@ import java.util.Set;
 
 /**
  * Creates non-resident, non-guard staff accounts (ADMIN, PROPERTY_MANAGER,
- * SUPERVISOR, CLIENT). Residents and guards have their own dedicated create
- * flows tied to a unit/property, so this is deliberately excluded here.
+ * SUPERVISOR). Residents and guards have their own dedicated create flows
+ * tied to a unit/property, so this is deliberately excluded here. CLIENT
+ * removed 2026-08-28 along with the rest of that role — see
+ * V10__drop_property_client.sql.
  *
  * Not called out explicitly in the Phase 1 build plan, but needed to
- * bootstrap property manager / supervisor / client / additional admin
- * accounts so "log in as each role" is actually testable.
+ * bootstrap property manager / supervisor / additional admin accounts so
+ * "log in as each role" is actually testable.
  */
 @Service
 @RequiredArgsConstructor
@@ -27,7 +29,7 @@ import java.util.Set;
 public class StaffService {
 
     private static final Set<Role> ALLOWED_ROLES = Set.of(
-            Role.ADMIN, Role.PROPERTY_MANAGER, Role.SUPERVISOR, Role.CLIENT);
+            Role.ADMIN, Role.PROPERTY_MANAGER, Role.SUPERVISOR);
 
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;

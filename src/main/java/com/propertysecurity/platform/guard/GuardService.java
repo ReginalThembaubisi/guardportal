@@ -5,7 +5,7 @@ import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.guard.dto.GuardRequest;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.property.PropertyRepository;
-import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
+import com.propertysecurity.platform.propertysupervisor.PropertySupervisorRepository;
 import com.propertysecurity.platform.user.AppUser;
 import com.propertysecurity.platform.user.AppUserRepository;
 import com.propertysecurity.platform.user.Role;
@@ -26,21 +26,25 @@ public class GuardService {
 
     private final GuardRepository guardRepository;
     private final PropertyRepository propertyRepository;
-    private final PropertyManagerRepository propertyManagerRepository;
+    private final PropertySupervisorRepository propertySupervisorRepository;
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * callerUserId is who's making the request. Previously accepted any
-     * propertyId with no check the caller manages it — same
-     * assertCanAccessProperty idiom as ResidentService/CheckpointService.
+     * callerUserId is who's making the request — a SUPERVISOR (the role
+     * that actually oversees security staff on-site) or ADMIN, per the
+     * controller's @PreAuthorize. Was originally scoped to PROPERTY_MANAGER;
+     * moved here since guard staffing is a security-operations
+     * responsibility, not a building-management one. Same
+     * assertCanAccessProperty idiom as ResidentService/CheckpointService,
+     * just against PropertySupervisorRepository instead.
      */
     public Guard create(Long callerUserId, GuardRequest request) {
         Property property = propertyRepository.findByIdAndDeletedAtIsNull(request.propertyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Property " + request.propertyId() + " not found"));
 
-        boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
-        if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(
+        boolean isAnySupervisor = propertySupervisorRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (isAnySupervisor && !propertySupervisorRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(
                 callerUserId, request.propertyId())) {
             throw new AccessDeniedException("This property is not yours");
         }

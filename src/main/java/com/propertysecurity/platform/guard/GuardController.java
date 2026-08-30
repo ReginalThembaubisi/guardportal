@@ -22,7 +22,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/guards")
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'ADMIN')")
+@PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
 public class GuardController {
 
     private final GuardService guardService;

@@ -1,4 +1,4 @@
-export type Role = "RESIDENT" | "GUARD" | "SUPERVISOR" | "PROPERTY_MANAGER" | "CLIENT" | "ADMIN";
+export type Role = "RESIDENT" | "GUARD" | "SUPERVISOR" | "PROPERTY_MANAGER" | "ADMIN";
 
 export interface AuthResponse {
   token: string;
@@ -85,13 +85,6 @@ export interface InvitationResponse {
 }
 
 export interface PropertyManagerResponse {
-  id: number;
-  userId: number;
-  propertyId: number;
-  propertyName: string;
-}
-
-export interface PropertyClientResponse {
   id: number;
   userId: number;
   propertyId: number;

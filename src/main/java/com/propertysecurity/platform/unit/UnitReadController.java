@@ -19,13 +19,11 @@ import java.util.List;
  * (but not create/edit/delete) units on their own managed properties —
  * needed to pick a destination unit when creating a resident. A guard can
  * browse units on their own assigned property — needed to link a walk-in
- * visitor to a destination unit (see VisitorEntryController.walkIn). A
- * client can browse units on properties they own — needed for the same
- * reason a property manager does: picking a unit when adding a resident.
+ * visitor to a destination unit (see VisitorEntryController.walkIn).
  */
 @RestController
 @RequiredArgsConstructor
-@PreAuthorize("hasAnyRole('GUARD', 'PROPERTY_MANAGER', 'CLIENT', 'ADMIN')")
+@PreAuthorize("hasAnyRole('GUARD', 'PROPERTY_MANAGER', 'ADMIN')")
 public class UnitReadController {
 
     private final PropertyUnitService unitService;

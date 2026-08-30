@@ -1,12 +1,17 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { GuardResponse, PropertyManagerResponse } from "../api/types";
+import type { GuardResponse, PropertySupervisorResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 
+/**
+ * Guard staffing moved here from Property Manager 2026-08-28 — assigning
+ * security staff is a supervisor's job (they oversee guards on-site), not
+ * a building manager's.
+ */
 export default function CreateGuardPage() {
   const { auth } = useAuth();
-  const [properties, setProperties] = useState<PropertyManagerResponse[] | null>(null);
+  const [properties, setProperties] = useState<PropertySupervisorResponse[] | null>(null);
   const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
 
   const [fullName, setFullName] = useState("");
@@ -20,7 +25,7 @@ export default function CreateGuardPage() {
 
   useEffect(() => {
     if (!auth) return;
-    apiFetch<PropertyManagerResponse[]>("/api/v1/property-managers/mine", { token: auth.token })
+    apiFetch<PropertySupervisorResponse[]>("/api/v1/property-supervisors/mine", { token: auth.token })
       .then((props) => {
         setProperties(props);
         if (props.length > 0) setSelectedPropertyId(props[0].propertyId);

@@ -6,7 +6,6 @@ import com.propertysecurity.platform.guard.Guard;
 import com.propertysecurity.platform.guard.GuardRepository;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.property.PropertyRepository;
-import com.propertysecurity.platform.propertyclient.PropertyClientRepository;
 import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
 import com.propertysecurity.platform.unit.dto.UnitRequest;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +25,6 @@ public class PropertyUnitService {
     private final PropertyUnitRepository unitRepository;
     private final PropertyRepository propertyRepository;
     private final PropertyManagerRepository propertyManagerRepository;
-    private final PropertyClientRepository propertyClientRepository;
     private final GuardRepository guardRepository;
 
     public PropertyUnit create(Long propertyId, UnitRequest request) {
@@ -74,11 +72,10 @@ public class PropertyUnitService {
 
     /**
      * Same idiom as VisitorEntryService.assertCanAccessProperty: a guard is
-     * restricted to their own assigned property; a client is restricted to
-     * properties they own; a caller with no PropertyManager rows at all
-     * (i.e. ADMIN, the only other role that reaches this) is unrestricted;
-     * a caller with any PropertyManager rows must have one matching this
-     * property.
+     * restricted to their own assigned property; a caller with no
+     * PropertyManager rows at all (i.e. ADMIN, the only other role that
+     * reaches this) is unrestricted; a caller with any PropertyManager rows
+     * must have one matching this property.
      */
     private void assertCanAccessProperty(Long callerUserId, Long propertyId) {
         Optional<Guard> guard = guardRepository.findByUser_IdAndDeletedAtIsNull(callerUserId);
@@ -90,15 +87,7 @@ public class PropertyUnitService {
         }
 
         boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
-        if (isAnyPropertyManager) {
-            if (!propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
-                throw new AccessDeniedException("This property is not yours");
-            }
-            return;
-        }
-
-        boolean isAnyClient = propertyClientRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
-        if (isAnyClient && !propertyClientRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
+        if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
             throw new AccessDeniedException("This property is not yours");
         }
     }

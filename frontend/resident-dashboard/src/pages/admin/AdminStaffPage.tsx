@@ -4,7 +4,7 @@ import type { Role, UserResponse } from "../../api/types";
 import { useAuth } from "../../auth/AuthContext";
 import Layout from "../../components/Layout";
 
-const STAFF_ROLES: Role[] = ["PROPERTY_MANAGER", "SUPERVISOR", "CLIENT", "ADMIN"];
+const STAFF_ROLES: Role[] = ["PROPERTY_MANAGER", "SUPERVISOR", "ADMIN"];
 
 export default function AdminStaffPage() {
   const { auth } = useAuth();
