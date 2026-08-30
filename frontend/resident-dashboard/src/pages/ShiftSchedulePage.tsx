@@ -89,6 +89,22 @@ function downloadCsvTemplate() {
   downloadCsv(CSV_TEMPLATE, "shift-schedule-import-template.csv");
 }
 
+const MAX_RANGE_DAYS = 92;
+
+/** Inclusive list of YYYY-MM-DD dates from start to end, done in UTC to avoid local-timezone drift. */
+function expandDateRange(start: string, end: string): string[] {
+  const [sy, sm, sd] = start.split("-").map(Number);
+  const [ey, em, ed] = end.split("-").map(Number);
+  const startMs = Date.UTC(sy, sm - 1, sd);
+  const endMs = Date.UTC(ey, em - 1, ed);
+  const dates: string[] = [];
+  for (let ms = startMs; ms <= endMs; ms += 86400000) {
+    const d = new Date(ms);
+    dates.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`);
+  }
+  return dates;
+}
+
 function downloadCsv(text: string, filename: string) {
   const blob = new Blob([text], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -113,7 +129,8 @@ export default function ShiftSchedulePage() {
   const [schedule, setSchedule] = useState<ShiftScheduleResponse[] | null>(null);
 
   const [selectedGuardId, setSelectedGuardId] = useState<number | null>(null);
-  const [shiftDate, setShiftDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [shiftType, setShiftType] = useState<ShiftType>("DAY");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
@@ -155,30 +172,56 @@ export default function ShiftSchedulePage() {
 
   useEffect(loadSchedule, [auth, selectedPropertyId]);
 
+  /**
+   * A guard often works the same shift every day for a stretch (e.g. nights
+   * from the 1st to the 4th) rather than one isolated day — typing that as
+   * one CSV row per day is exactly the tedious manual entry this feature is
+   * meant to replace. So this expands the date range into one row per day
+   * and posts it through the same bulk-import endpoint as the CSV upload,
+   * which already reports each day's outcome (e.g. a day that's already
+   * scheduled gets skipped with a reason, not silently dropped or aborted).
+   */
   async function submitAdd(e: FormEvent) {
     e.preventDefault();
     if (!auth || selectedGuardId === null || selectedPropertyId === null) return;
+    const guard = guardsForSelectedProperty.find((g) => g.id === selectedGuardId);
+    if (!guard) return;
+
+    const effectiveEndDate = endDate || startDate;
+    if (effectiveEndDate < startDate) {
+      setError("End date can't be before the start date");
+      return;
+    }
+    const dates = expandDateRange(startDate, effectiveEndDate);
+    if (dates.length > MAX_RANGE_DAYS) {
+      setError(`That range is ${dates.length} days — split it into batches of ${MAX_RANGE_DAYS} or fewer`);
+      return;
+    }
+
     setError(null);
+    setImportResult(null);
     setBusy(true);
     try {
-      await apiFetch("/api/v1/shift-schedules", {
+      const rows: ShiftScheduleImportRow[] = dates.map((shiftDate) => ({
+        guardPhoneNumber: guard.phoneNumber,
+        shiftDate,
+        shiftType,
+        startTime: startTime || undefined,
+        endTime: endTime || undefined,
+      }));
+      const result = await apiFetch<ShiftScheduleImportResponse>("/api/v1/shift-schedules/import", {
         method: "POST",
         token: auth.token,
-        body: {
-          guardId: selectedGuardId,
-          propertyId: selectedPropertyId,
-          shiftDate,
-          shiftType,
-          startTime: startTime || undefined,
-          endTime: endTime || undefined,
-        },
+        body: { propertyId: selectedPropertyId, rows },
       });
-      setShiftDate("");
+      setImportResult(result);
+      setStartDate("");
+      setEndDate("");
       setStartTime("");
       setEndTime("");
       loadSchedule();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to add shift");
+      setError(err instanceof ApiError ? err.message : "Failed to add shift(s)");
     } finally {
       setBusy(false);
     }
@@ -325,6 +368,10 @@ export default function ShiftSchedulePage() {
           )}
 
           <h2 style={{ marginTop: 24 }}>Add a shift</h2>
+          <p className="dev-hint">
+            Set an end date to repeat the same shift every day in between — e.g. nights from the 1st to
+            the 4th — instead of adding each day one by one.
+          </p>
           <form onSubmit={submitAdd}>
             <label>
               Guard
@@ -341,8 +388,12 @@ export default function ShiftSchedulePage() {
               )}
             </label>
             <label>
-              Date
-              <input type="date" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} required />
+              Start date
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+            </label>
+            <label>
+              End date (optional — repeats the shift through this date)
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} min={startDate || undefined} />
             </label>
             <label>
               Shift type
@@ -360,7 +411,7 @@ export default function ShiftSchedulePage() {
               <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
             </label>
             <button type="submit" disabled={busy || guardsForSelectedProperty.length === 0}>
-              {busy ? "Adding…" : "Add shift"}
+              {busy ? "Adding…" : endDate && endDate !== startDate ? "Add shifts" : "Add shift"}
             </button>
           </form>
         </>
