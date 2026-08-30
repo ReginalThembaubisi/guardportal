@@ -114,6 +114,17 @@ export interface ShiftScheduleResponse {
   createdAt: string;
 }
 
+/** For the checkpoint picker — a guard checks in by picking one of these by name, no QR scan involved. */
+export interface CheckpointResponse {
+  id: number;
+  propertyId: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  geoToleranceMeters: number | null;
+  createdAt: string;
+}
+
 export interface CheckpointScanResponse {
   id: number;
   checkpointId: number;

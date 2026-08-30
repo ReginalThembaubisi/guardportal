@@ -72,7 +72,7 @@ export default function Layout({ title, children }: { title: string; children: R
           Check in
         </NavLink>
         <NavLink to="/scan" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
-          Scan
+          Checkpoint
         </NavLink>
         <NavLink to="/occupancy" className={({ isActive }) => (isActive ? "nav-item active" : "nav-item")}>
           Occupancy

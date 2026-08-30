@@ -137,8 +137,6 @@ export interface CheckpointResponse {
   latitude: number;
   longitude: number;
   geoToleranceMeters: number | null;
-  qrToken: string;
-  qrCodeDataUri: string | null;
   createdAt: string;
 }
 

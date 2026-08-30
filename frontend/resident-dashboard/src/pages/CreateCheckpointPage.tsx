@@ -160,10 +160,7 @@ export default function CreateCheckpointPage() {
         <div className="invitation-result">
           <h2>Checkpoint created</h2>
           <p className="checkin-visitor-name">{created.name}</p>
-          {created.qrCodeDataUri && (
-            <img className="invitation-qr" src={created.qrCodeDataUri} alt="Checkpoint QR code" />
-          )}
-          <p className="entry-meta">Guards scan this to log a patrol pass.</p>
+          <p className="entry-meta">Guards can now check in here from the guard app's Checkpoint tab.</p>
         </div>
       )}
     </Layout>

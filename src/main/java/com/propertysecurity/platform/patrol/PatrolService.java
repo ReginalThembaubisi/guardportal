@@ -54,15 +54,15 @@ public class PatrolService {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
 
-        Checkpoint checkpoint = checkpointRepository.findByQrTokenAndDeletedAtIsNull(request.qrToken())
-                .orElseThrow(() -> new ResourceNotFoundException("Invalid checkpoint code"));
+        Checkpoint checkpoint = checkpointRepository.findByIdAndDeletedAtIsNull(request.checkpointId())
+                .orElseThrow(() -> new ResourceNotFoundException("Checkpoint not found"));
 
         if (!checkpoint.getProperty().getId().equals(guard.getProperty().getId())) {
             throw new AccessDeniedException("This checkpoint is for a different property");
         }
 
         Shift shift = shiftRepository.findByGuard_IdAndClockOutAtIsNull(guard.getId())
-                .orElseThrow(() -> new BadRequestException("You must be clocked in to scan a checkpoint"));
+                .orElseThrow(() -> new BadRequestException("You must be clocked in to check in at a checkpoint"));
 
         int tolerance = tolerance(checkpoint);
         int distance = GeoDistance.metersBetween(

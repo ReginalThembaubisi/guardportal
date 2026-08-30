@@ -12,11 +12,9 @@ public record CheckpointResponse(
         BigDecimal latitude,
         BigDecimal longitude,
         Integer geoToleranceMeters,
-        String qrToken,
-        String qrCodeDataUri,
         LocalDateTime createdAt
 ) {
-    public static CheckpointResponse from(Checkpoint checkpoint, String qrCodeDataUri) {
+    public static CheckpointResponse from(Checkpoint checkpoint) {
         return new CheckpointResponse(
                 checkpoint.getId(),
                 checkpoint.getProperty().getId(),
@@ -24,8 +22,6 @@ public record CheckpointResponse(
                 checkpoint.getLatitude(),
                 checkpoint.getLongitude(),
                 checkpoint.getGeoToleranceMeters(),
-                checkpoint.getQrToken(),
-                qrCodeDataUri,
                 checkpoint.getCreatedAt());
     }
 }

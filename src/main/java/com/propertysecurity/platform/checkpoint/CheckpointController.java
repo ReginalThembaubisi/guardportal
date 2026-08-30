@@ -30,22 +30,25 @@ public class CheckpointController {
     @ResponseStatus(HttpStatus.CREATED)
     public CheckpointResponse create(Authentication authentication, @Valid @RequestBody CheckpointRequest request) {
         Long callerUserId = (Long) authentication.getPrincipal();
-        CheckpointService.Created created = checkpointService.create(callerUserId, request);
-        return CheckpointResponse.from(created.checkpoint(), created.qrCodeDataUri());
+        return CheckpointResponse.from(checkpointService.create(callerUserId, request));
     }
 
-    /** Scoped to the caller's own managed properties (ADMIN unrestricted) — needed to build a patrol route. */
+    /**
+     * Scoped to the caller's own managed properties (ADMIN unrestricted) —
+     * needed to build a patrol route, and by a guard to pick which
+     * checkpoint they're checking into.
+     */
     @GetMapping
+    @PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'ADMIN', 'GUARD')")
     public List<CheckpointResponse> listByProperty(Authentication authentication, @RequestParam Long propertyId) {
         Long callerUserId = (Long) authentication.getPrincipal();
         return checkpointService.listByPropertyForCaller(callerUserId, propertyId).stream()
-                .map(checkpoint -> CheckpointResponse.from(checkpoint, null))
+                .map(CheckpointResponse::from)
                 .toList();
     }
 
     @GetMapping("/{id}")
     public CheckpointResponse get(@PathVariable Long id) {
-        CheckpointService.Created shareable = checkpointService.getShareable(id);
-        return CheckpointResponse.from(shareable.checkpoint(), shareable.qrCodeDataUri());
+        return CheckpointResponse.from(checkpointService.get(id));
     }
 }

@@ -41,7 +41,4 @@ public class Checkpoint extends BaseEntity {
     /** Nullable — falls back to property.geoToleranceMeters, then the global default. */
     @Column(name = "geo_tolerance_meters")
     private Integer geoToleranceMeters;
-
-    @Column(name = "qr_token", nullable = false, unique = true, length = 36)
-    private String qrToken;
 }
