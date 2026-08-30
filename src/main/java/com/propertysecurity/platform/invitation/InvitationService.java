@@ -16,6 +16,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,9 +105,23 @@ public class InvitationService {
         return (base.endsWith("/") ? base : base + "/") + qrToken;
     }
 
+    private static final DateTimeFormatter WHATSAPP_DATE = DateTimeFormatter.ofPattern("d MMM");
+    private static final DateTimeFormatter WHATSAPP_TIME = DateTimeFormatter.ofPattern("HH:mm");
+
+    /**
+     * Code above the link: the link survives a copy-paste, the code is the
+     * thing that needs to be read (often aloud, over a phone call at the
+     * gate) — see the resident share screen's own note that these are two
+     * doors into the same invitation.
+     */
     private String buildWhatsAppLink(Invitation invitation, String checkInUrl) {
         String propertyName = invitation.getResident().getUnit().getProperty().getName();
-        String message = "You're invited to " + propertyName + ". Show this link at the gate to check in: " + checkInUrl;
+        String message = "You're expected at " + propertyName + ",\n"
+                + invitation.getValidFrom().format(WHATSAPP_DATE) + ", "
+                + invitation.getValidFrom().format(WHATSAPP_TIME) + "–" + invitation.getValidUntil().format(WHATSAPP_TIME) + ".\n\n"
+                + "Gate code: " + formatShortCode(invitation.getShortCode()) + "\n"
+                + "Or show this at the gate:\n"
+                + checkInUrl;
         String encodedMessage = URLEncoder.encode(message, StandardCharsets.UTF_8);
 
         String digitsOnlyPhone = Optional.ofNullable(invitation.getVisitorPhone())
@@ -117,6 +132,11 @@ public class InvitationService {
         return digitsOnlyPhone == null
                 ? "https://wa.me/?text=" + encodedMessage
                 : "https://wa.me/" + digitsOnlyPhone + "?text=" + encodedMessage;
+    }
+
+    /** 417302 -> "417 302" — the triple grouping is how the code is spoken. */
+    private String formatShortCode(String shortCode) {
+        return shortCode.length() > 3 ? shortCode.substring(0, 3) + " " + shortCode.substring(3) : shortCode;
     }
 
     /**

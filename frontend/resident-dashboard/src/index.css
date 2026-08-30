@@ -331,32 +331,181 @@ form button[type="submit"]:disabled {
   color: var(--ok);
 }
 
-.invitation-qr {
-  width: 220px;
-  height: 220px;
-  margin: 16px auto;
-  display: block;
+/*
+  Invitation share screen (design addendum, frame 3b) — replaces the old
+  single .invitation-result box for this one page: a QR card, a divider to
+  the code (the always-available secondary path once a camera fails), a
+  message preview so "both are being sent" is credible, then the send
+  actions. .invitation-result/.link-button above are shared by several
+  other create-* pages and are untouched.
+*/
+.share-screen {
+  max-width: 420px;
+}
+
+.share-visitor-name {
+  font-family: var(--display);
+  text-transform: uppercase;
+  font-size: 21px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.share-window {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: 0 0 18px;
+}
+
+.share-qr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: var(--surface);
   border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+
+.share-qr-image {
+  width: 186px;
+  height: 186px;
   border-radius: 4px;
   padding: 8px;
   background: white;
 }
 
-.whatsapp-share-button {
-  display: block;
-  margin: 16px 0 12px;
-  padding: 10px;
+/* "Or read this out" — rule lines either side, not a plain label. */
+.share-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.share-divider::before,
+.share-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.share-code-block {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-sunken);
   border-radius: 4px;
-  background: #25d366;
-  color: white;
-  font-family: var(--body);
+  padding: 14px;
+}
+
+.share-code {
+  font-family: var(--stencil);
+  font-weight: 800;
+  font-size: 46px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+/* Sits on --surface-sunken, so this is var(--text), not --text-muted — the
+   9.5-10px muted-eyebrow allowance only covers --surface/--ground. */
+.share-code-caption {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text);
+}
+
+.share-message-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.share-message-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.share-message-body {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.7;
+  white-space: pre-line;
+  margin: 0;
+}
+
+.share-whatsapp-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 62px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--surface);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 21px;
+  font-weight: 700;
+  text-decoration: none;
+  margin-bottom: 10px;
+}
+
+.share-whatsapp-button:hover {
+  background: var(--accent-strong);
+}
+
+.share-action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.share-action-row button,
+.share-action-row a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
 }
 
-.whatsapp-share-button:hover {
-  background: #1ebe5a;
+.share-closing-note {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 18px;
 }
 
 .empty {

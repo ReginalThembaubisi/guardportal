@@ -10,6 +10,24 @@ function toLocalInputValue(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** 417302 -> "417 302" — the triple grouping is how the code is spoken. */
+function formatCode(code: string): string {
+  return code.length > 3 ? `${code.slice(0, 3)} ${code.slice(3)}` : code;
+}
+
+/**
+ * The outgoing WhatsApp text, read back out of the link itself rather than
+ * rebuilt separately — showing the resident anything other than the actual
+ * bytes their visitor receives would undercut the point of previewing it.
+ */
+function extractMessagePreview(whatsappShareLink: string): string {
+  try {
+    return new URL(whatsappShareLink).searchParams.get("text") ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export default function CreateInvitationPage() {
   const { auth } = useAuth();
   const now = new Date();
@@ -23,6 +41,7 @@ export default function CreateInvitationPage() {
   const [error, setError] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<InvitationResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -51,6 +70,7 @@ export default function CreateInvitationPage() {
 
   function startOver() {
     setInvitation(null);
+    setCodeCopied(false);
     setVisitorName("");
     setVisitorPhone("");
     setPurpose("");
@@ -59,32 +79,69 @@ export default function CreateInvitationPage() {
     setValidUntil(toLocalInputValue(new Date(freshNow.getTime() + 24 * 60 * 60 * 1000)));
   }
 
+  async function copyCode() {
+    if (!invitation) return;
+    try {
+      await navigator.clipboard.writeText(invitation.shortCode);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 1500);
+    } catch {
+      // Clipboard access can be denied by the browser — the code is still
+      // right there on screen to read out or type manually.
+    }
+  }
+
   if (invitation) {
+    const visitorFirstName = invitation.visitorName.trim().split(/\s+/)[0] || invitation.visitorName;
+    const qrFileName = `checkin-qr-${invitation.id}.png`;
+
     return (
       <Layout title="Invite a Visitor">
-        <div className="invitation-result">
-          <h2>Invitation created</h2>
-          <p className="checkin-visitor-name">{invitation.visitorName}</p>
-          <p className="entry-meta">
+        <div className="share-screen">
+          <h2 className="share-visitor-name">{invitation.visitorName}</h2>
+          <p className="share-window">
             Valid {new Date(invitation.validFrom).toLocaleString()} – {new Date(invitation.validUntil).toLocaleString()}
           </p>
 
-          {invitation.qrCodeDataUri && (
-            <img className="invitation-qr" src={invitation.qrCodeDataUri} alt="Check-in QR code" />
-          )}
-
-          <p className="entry-meta">Show this QR code to the guard at the gate, or share the link below.</p>
+          <div className="share-qr-card">
+            {invitation.qrCodeDataUri && (
+              <img className="share-qr-image" src={invitation.qrCodeDataUri} alt="Check-in QR code" />
+            )}
+            <span className="share-divider">Or read this out</span>
+            <div className="share-code-block">
+              <span className="share-code">{formatCode(invitation.shortCode)}</span>
+              <span className="share-code-caption">Works even if the camera fails</span>
+            </div>
+          </div>
 
           {invitation.whatsappShareLink && (
-            <a
-              className="whatsapp-share-button"
-              href={invitation.whatsappShareLink}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Share via WhatsApp
+            <div className="share-message-card">
+              <span className="share-message-eyebrow">What {visitorFirstName} receives</span>
+              <p className="share-message-body">{extractMessagePreview(invitation.whatsappShareLink)}</p>
+            </div>
+          )}
+
+          {invitation.whatsappShareLink && (
+            <a className="share-whatsapp-button" href={invitation.whatsappShareLink} target="_blank" rel="noreferrer">
+              Send via WhatsApp
             </a>
           )}
+
+          <div className="share-action-row">
+            <button type="button" onClick={copyCode}>
+              {codeCopied ? "Copied" : "Copy code"}
+            </button>
+            {invitation.qrCodeDataUri && (
+              <a href={invitation.qrCodeDataUri} download={qrFileName}>
+                Save QR
+              </a>
+            )}
+          </div>
+
+          <p className="share-closing-note">
+            The code and the link are two doors into the same invitation. Either one checks {visitorFirstName} in
+            once — using one closes both.
+          </p>
 
           <button className="link-button" onClick={startOver}>
             Create another invitation

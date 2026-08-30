@@ -78,6 +78,7 @@ export interface InvitationResponse {
   validUntil: string;
   status: InvitationStatus;
   qrToken: string;
+  shortCode: string;
   checkInUrl: string;
   qrCodeDataUri: string | null;
   whatsappShareLink: string | null;

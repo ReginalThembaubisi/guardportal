@@ -21,19 +21,13 @@ const CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STA
 const CODE_LENGTH = 6;
 
 /**
- * Flip to true now that the `short_code` migration and the `shortCode`
- * field on ScanRequest are deployed (see backend commit adding
- * V13__add_invitation_short_code.sql and CheckInRejectedException) — kept
- * false until the resident share screen (step 3) also ships, since a code
- * guards can type but residents can't send is half a feature.
- *
- * Until then a typed 6-digit code is sent as `qrToken`, where it simply will
- * not match any invitation — the guard gets the honest "no such code here"
- * outcome instead of a 400 from a field the server does not know about. QR
- * scanning is unaffected either way: a scanned UUID always goes out as
- * `qrToken`.
+ * Live: the backend's `short_code` column/lookup (V13__add_invitation_short_code.sql,
+ * CheckInRejectedException) and the resident share screen that sends it
+ * both ship together — a code guards can type but residents can't send was
+ * half a feature. A typed 6-digit code now goes out as `shortCode`; a
+ * scanned UUID always goes out as `qrToken` regardless of this flag.
  */
-const USE_SHORT_CODE_FIELD = false;
+const USE_SHORT_CODE_FIELD = true;
 
 type CodeOutcomeKind = "expired" | "used" | "notfound";
 type CodeOutcome = { kind: CodeOutcomeKind; heading: string; detail: string };
