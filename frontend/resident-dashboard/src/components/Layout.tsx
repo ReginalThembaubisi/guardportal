@@ -72,6 +72,9 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/guards/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Add Guard
           </NavLink>
+          <NavLink to="/shift-schedule" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Shift Schedule
+          </NavLink>
           <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Incidents
           </NavLink>

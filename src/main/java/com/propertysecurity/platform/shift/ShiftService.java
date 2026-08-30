@@ -9,6 +9,8 @@ import com.propertysecurity.platform.guard.Guard;
 import com.propertysecurity.platform.guard.GuardRepository;
 import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.shift.dto.LocationRequest;
+import com.propertysecurity.platform.shiftschedule.ShiftSchedule;
+import com.propertysecurity.platform.shiftschedule.ShiftScheduleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,7 @@ public class ShiftService {
     private final ShiftRepository shiftRepository;
     private final GuardRepository guardRepository;
     private final AuditLogService auditLogService;
+    private final ShiftScheduleService shiftScheduleService;
 
     @Value("${app.geo.default-tolerance-meters:150}")
     private int defaultToleranceMeters;
@@ -48,14 +51,17 @@ public class ShiftService {
         Property property = guard.getProperty();
         GeoCheck check = checkLocation(property, location);
 
+        LocalDateTime clockInAt = LocalDateTime.now();
+
         Shift shift = new Shift();
         shift.setGuard(guard);
         shift.setProperty(property);
-        shift.setClockInAt(LocalDateTime.now());
+        shift.setClockInAt(clockInAt);
         shift.setClockInLatitude(location.latitude());
         shift.setClockInLongitude(location.longitude());
         shift.setClockInDistanceMeters(check.distanceMeters());
         shift.setClockInWithinTolerance(check.withinTolerance());
+        shift.setShiftType(resolveShiftType(guard.getId(), clockInAt));
 
         Shift saved = shiftRepository.save(shift);
         auditLogService.record("shift", saved.getId(), AuditAction.CREATE, guardUserId, null, snapshot(saved));
@@ -91,6 +97,20 @@ public class ShiftService {
                 Map.of("clockOutAt", saved.getClockOutAt(), "clockOutWithinTolerance",
                         String.valueOf(saved.getClockOutWithinTolerance())));
         return saved;
+    }
+
+    /**
+     * Uses today's scheduled shift's DAY/NIGHT when one exists (the
+     * Supervisor-uploaded roster is the source of truth); otherwise derives
+     * it from the clock-in hour so the field is never left blank.
+     */
+    private ShiftType resolveShiftType(Long guardId, LocalDateTime clockInAt) {
+        Optional<ShiftSchedule> scheduled = shiftScheduleService.findTodayForGuard(guardId);
+        if (scheduled.isPresent()) {
+            return scheduled.get().getShiftType();
+        }
+        int hour = clockInAt.getHour();
+        return (hour >= 6 && hour < 18) ? ShiftType.DAY : ShiftType.NIGHT;
     }
 
     private record GeoCheck(Integer distanceMeters, Boolean withinTolerance) {

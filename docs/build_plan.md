@@ -81,3 +81,9 @@ actual guards and residents will change some of these before they're worth build
 > `docs/audit_trail_design.md` recommends building alongside incidents was deliberately deferred —
 > not built yet. `GET /incidents/{id}/evidence-pack` still needs to happen before this feature is
 > what the client proposal actually promised ("court-admissible incident records").
+
+> **2026-08-30: shift_schedule (a Supervisor-uploaded roster of who's working which property, day
+> or night, and when) was built, also ahead of pilot feedback, at the dev's explicit request.** It
+> replaces coordinating guard shifts over a WhatsApp group — guards now see their own upcoming
+> shifts in the guard app, and clock-in looks up today's row to record DAY/NIGHT on the actual
+> worked shift. Distinct from the `shift` table (a plan vs. what actually happened).

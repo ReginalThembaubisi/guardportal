@@ -79,6 +79,8 @@ export interface OccupancyResponse {
   byCategory: Record<VisitorCategory, VisitorEntryResponse[]>;
 }
 
+export type ShiftType = "DAY" | "NIGHT";
+
 export interface ShiftResponse {
   id: number;
   guardId: number;
@@ -94,6 +96,21 @@ export interface ShiftResponse {
   clockOutLongitude: number | null;
   clockOutDistanceMeters: number | null;
   clockOutWithinTolerance: boolean | null;
+  shiftType: ShiftType | null;
+  createdAt: string;
+}
+
+/** A planned/rostered shift, uploaded by a Supervisor — replaces checking a WhatsApp group. */
+export interface ShiftScheduleResponse {
+  id: number;
+  guardId: number;
+  guardName: string;
+  propertyId: number;
+  propertyName: string;
+  shiftDate: string;
+  shiftType: ShiftType;
+  startTime: string | null;
+  endTime: string | null;
   createdAt: string;
 }
 

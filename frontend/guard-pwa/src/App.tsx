@@ -8,6 +8,7 @@ import OccupancyPage from "./pages/OccupancyPage";
 import WalkInPage from "./pages/WalkInPage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
 import ReportIncidentPage from "./pages/ReportIncidentPage";
+import MyShiftsPage from "./pages/MyShiftsPage";
 
 export default function App() {
   return (
@@ -66,6 +67,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ReportIncidentPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/shifts"
+        element={
+          <ProtectedRoute>
+            <MyShiftsPage />
           </ProtectedRoute>
         }
       />

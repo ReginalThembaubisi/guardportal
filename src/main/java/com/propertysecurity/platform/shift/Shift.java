@@ -4,6 +4,8 @@ import com.propertysecurity.platform.guard.Guard;
 import com.propertysecurity.platform.property.Property;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -72,6 +74,15 @@ public class Shift {
 
     @Column(name = "clock_out_within_tolerance")
     private Boolean clockOutWithinTolerance;
+
+    /**
+     * Informational only — from the matching ShiftSchedule row at clock-in
+     * time, or derived from the clock-in hour when there isn't one. Never
+     * used in access-control or tolerance logic.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "shift_type", length = 10)
+    private ShiftType shiftType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

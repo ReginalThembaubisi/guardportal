@@ -186,6 +186,44 @@ export interface GuardResponse {
   createdAt: string;
 }
 
+export type ShiftType = "DAY" | "NIGHT";
+
+/** A planned/rostered shift, uploaded by a Supervisor — replaces sharing shifts over WhatsApp. */
+export interface ShiftScheduleResponse {
+  id: number;
+  guardId: number;
+  guardName: string;
+  propertyId: number;
+  propertyName: string;
+  shiftDate: string;
+  shiftType: ShiftType;
+  startTime: string | null;
+  endTime: string | null;
+  createdAt: string;
+}
+
+export interface ShiftScheduleImportRow {
+  guardPhoneNumber: string;
+  shiftDate: string;
+  shiftType: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface ShiftScheduleImportResultRow {
+  rowNumber: number;
+  guardPhoneNumber: string;
+  shiftDate: string;
+  created: boolean;
+  reason: string | null;
+}
+
+export interface ShiftScheduleImportResponse {
+  createdCount: number;
+  skippedCount: number;
+  rows: ShiftScheduleImportResultRow[];
+}
+
 export interface VehicleResponse {
   id: number;
   registration: string;

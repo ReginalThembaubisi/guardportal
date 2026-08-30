@@ -10,6 +10,7 @@ import CreateCheckpointPage from "./pages/CreateCheckpointPage";
 import CreatePatrolRoutePage from "./pages/CreatePatrolRoutePage";
 import PatrolStatusPage from "./pages/PatrolStatusPage";
 import CreateGuardPage from "./pages/CreateGuardPage";
+import ShiftSchedulePage from "./pages/ShiftSchedulePage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
 import IncidentsPage from "./pages/IncidentsPage";
 import VisitorHistoryPage from "./pages/VisitorHistoryPage";
@@ -101,6 +102,14 @@ export default function App() {
         element={
           <ProtectedRoute role="SUPERVISOR">
             <CreateGuardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/shift-schedule"
+        element={
+          <ProtectedRoute role="SUPERVISOR">
+            <ShiftSchedulePage />
           </ProtectedRoute>
         }
       />

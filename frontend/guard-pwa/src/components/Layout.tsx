@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
-const MORE_ROUTES = ["/walk-in", "/vehicle-history", "/report-incident"];
+const MORE_ROUTES = ["/walk-in", "/vehicle-history", "/report-incident", "/shifts"];
 
 export default function Layout({ title, children }: { title: string; children: ReactNode }) {
   const { auth, logout } = useAuth();
@@ -53,6 +53,9 @@ export default function Layout({ title, children }: { title: string; children: R
             </button>
             <button type="button" className="nav-sheet-item" onClick={() => goTo("/report-incident")}>
               Incident
+            </button>
+            <button type="button" className="nav-sheet-item" onClick={() => goTo("/shifts")}>
+              My Shifts
             </button>
             <button type="button" className="nav-sheet-cancel" onClick={() => setMoreOpen(false)}>
               Cancel

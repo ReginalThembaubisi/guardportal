@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { ShiftResponse } from "../api/types";
+import type { ShiftResponse, ShiftScheduleResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Layout from "../components/Layout";
 import ToleranceBadge from "../components/ToleranceBadge";
@@ -11,6 +11,16 @@ export default function ClockPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastClockOut, setLastClockOut] = useState<ShiftResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  const [todayShift, setTodayShift] = useState<ShiftScheduleResponse | null>(null);
+
+  useEffect(() => {
+    if (!auth) return;
+    apiFetch<ShiftScheduleResponse | undefined>("/api/v1/shift-schedules/today", { token: auth.token })
+      .then((shift) => setTodayShift(shift ?? null))
+      .catch(() => {
+        // No schedule set up yet, or offline — clock-in still works without it.
+      });
+  }, [auth]);
 
   async function handleClockIn() {
     if (!auth) return;
@@ -79,7 +89,14 @@ export default function ClockPage() {
 
       {!openShift && (
         <div className="clock-card">
-          <p className="empty">You're not clocked in.</p>
+          {todayShift ? (
+            <p className="clock-status">
+              Today's shift: {todayShift.propertyName} — {todayShift.shiftType}
+              {todayShift.startTime && todayShift.endTime && ` (${todayShift.startTime}–${todayShift.endTime})`}
+            </p>
+          ) : (
+            <p className="empty">You're not clocked in.</p>
+          )}
           <button className="clock-button" onClick={handleClockIn} disabled={busy}>
             {busy ? "Getting your location…" : "Clock In"}
           </button>

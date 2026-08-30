@@ -1,6 +1,7 @@
 package com.propertysecurity.platform.shift.dto;
 
 import com.propertysecurity.platform.shift.Shift;
+import com.propertysecurity.platform.shift.ShiftType;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,6 +21,7 @@ public record ShiftResponse(
         BigDecimal clockOutLongitude,
         Integer clockOutDistanceMeters,
         Boolean clockOutWithinTolerance,
+        ShiftType shiftType,
         LocalDateTime createdAt
 ) {
     public static ShiftResponse from(Shift shift) {
@@ -38,6 +40,7 @@ public record ShiftResponse(
                 shift.getClockOutLongitude(),
                 shift.getClockOutDistanceMeters(),
                 shift.getClockOutWithinTolerance(),
+                shift.getShiftType(),
                 shift.getCreatedAt());
     }
 }
