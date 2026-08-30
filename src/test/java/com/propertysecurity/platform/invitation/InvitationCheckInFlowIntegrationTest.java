@@ -143,6 +143,33 @@ class InvitationCheckInFlowIntegrationTest {
                 .andExpect(jsonPath("$.valid").value(true));
     }
 
+    /**
+     * Regression test: getForResident() followed by toShareable() used to
+     * run in separate transactions over a non-fetch-joined Invitation,
+     * throwing LazyInitializationException the moment buildWhatsAppLink
+     * touched invitation.resident.unit.property — this is the "Send again" /
+     * "Send code & QR again" path on the resident Home and Active pages.
+     */
+    @Test
+    void residentCanReFetchTheirOwnInvitationForResharing() throws Exception {
+        Fixtures fx = setUpPropertyWithResidentAndGuard("Reshare Estate");
+        String residentToken = tokenFor(fx.residentUserId(), Role.RESIDENT);
+
+        String invitationJson = mockMvc.perform(post("/api/v1/invitations")
+                        .header("Authorization", "Bearer " + residentToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(invitationBody()))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long invitationId = extractLong(invitationJson, "id");
+
+        mockMvc.perform(get("/api/v1/invitations/" + invitationId)
+                        .header("Authorization", "Bearer " + residentToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.whatsappShareLink").isNotEmpty())
+                .andExpect(jsonPath("$.qrCodeDataUri").isNotEmpty());
+    }
+
     @Test
     void guardFromADifferentPropertyCannotScan() throws Exception {
         Fixtures inviteProperty = setUpPropertyWithResidentAndGuard("Property A");

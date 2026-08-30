@@ -17,6 +17,18 @@ public interface InvitationRepository extends JpaRepository<Invitation, Long> {
     Optional<Invitation> findByIdAndResident_Id(Long id, Long residentId);
 
     /**
+     * Fetch-joined through resident/unit/property: getForResident() and the
+     * later toShareable() call it feeds (see InvitationController.get()) run
+     * in separate transactions, so an uninitialized lazy proxy crossing that
+     * boundary throws LazyInitializationException the moment
+     * buildWhatsAppLink touches resident.unit.property. Joining here
+     * resolves those associations to real objects while this transaction
+     * is still open, so reading them later never needs a session.
+     */
+    @Query("select i from Invitation i join fetch i.resident r join fetch r.unit u join fetch u.property where i.id = :id and i.resident.id = :residentId")
+    Optional<Invitation> findByIdAndResident_IdFetchResidentUnitAndProperty(@Param("id") Long id, @Param("residentId") Long residentId);
+
+    /**
      * Short codes are reused across time once an invitation is no longer
      * PENDING-and-overlapping (see V13), so more than one row at a property
      * can share a code. The most recently created one is what a guard means

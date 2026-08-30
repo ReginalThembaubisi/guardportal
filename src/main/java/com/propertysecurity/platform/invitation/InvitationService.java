@@ -87,7 +87,7 @@ public class InvitationService {
     public Invitation getForResident(Long residentUserId, Long invitationId) {
         Resident resident = residentRepository.findByUser_IdAndDeletedAtIsNull(residentUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No resident profile found for this account"));
-        return invitationRepository.findByIdAndResident_Id(invitationId, resident.getId())
+        return invitationRepository.findByIdAndResident_IdFetchResidentUnitAndProperty(invitationId, resident.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation " + invitationId + " not found"));
     }
 

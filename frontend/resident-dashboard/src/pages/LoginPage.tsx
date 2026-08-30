@@ -15,7 +15,7 @@ export default function LoginPage() {
   function handleLoggedIn(response: AuthResponse) {
     login(response);
     if (response.roles.includes("RESIDENT")) {
-      navigate("/history");
+      navigate("/home");
     } else if (response.roles.includes("PROPERTY_MANAGER")) {
       navigate("/dashboard");
     } else if (response.roles.includes("SUPERVISOR")) {

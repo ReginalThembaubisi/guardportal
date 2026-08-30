@@ -120,6 +120,13 @@ export interface ResidentImportResponse {
   rows: ResidentImportResultRow[];
 }
 
+/** A resident's own unit/property — for the Home page header. */
+export interface ResidentProfileResponse {
+  fullName: string;
+  unitNumber: string;
+  propertyName: string;
+}
+
 export interface ResidentResponse {
   id: number;
   userId: number;

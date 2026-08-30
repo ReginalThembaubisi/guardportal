@@ -1,5 +1,6 @@
 import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
+import ResidentHomePage from "./pages/ResidentHomePage";
 import ResidentHistoryPage from "./pages/ResidentHistoryPage";
 import CreateInvitationPage from "./pages/CreateInvitationPage";
 import PendingInvitationsPage from "./pages/PendingInvitationsPage";
@@ -25,6 +26,14 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
+      <Route
+        path="/home"
+        element={
+          <ProtectedRoute role="RESIDENT">
+            <ResidentHomePage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/history"
         element={

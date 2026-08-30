@@ -17,25 +17,34 @@ export default function Layout({ title, children }: { title: string; children: R
         <h1>{title}</h1>
         <div className="layout-header-right">
           {auth && <span className="user-name">{auth.fullName}</span>}
-          <button className="link-button" onClick={handleLogout}>
-            Log out
-          </button>
+          {hasRole("RESIDENT") ? (
+            <button className="logout-button" onClick={handleLogout}>
+              Log out
+            </button>
+          ) : (
+            <button className="link-button" onClick={handleLogout}>
+              Log out
+            </button>
+          )}
         </div>
       </header>
 
       {hasRole("RESIDENT") && (
-        <nav className="top-nav">
+        <nav className="top-nav nav-resident">
+          <NavLink to="/home" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Home
+          </NavLink>
+          <NavLink to="/invite" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Invite
+          </NavLink>
+          <NavLink to="/invitations/pending" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Active
+          </NavLink>
           <NavLink to="/history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             History
           </NavLink>
-          <NavLink to="/invite" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            New Invitation
-          </NavLink>
-          <NavLink to="/invitations/pending" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Pending Invitations
-          </NavLink>
           <NavLink to="/vehicles" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            My Vehicles
+            Cars
           </NavLink>
         </nav>
       )}

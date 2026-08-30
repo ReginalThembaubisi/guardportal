@@ -508,6 +508,324 @@ form button[type="submit"]:disabled {
   margin: 0 0 18px;
 }
 
+/*
+  Resident Home (design addendum, frame 3b) and the "Active" invitations
+  list that replaced Pending Invitations' <table>. Scoped to the resident
+  role only, per the addendum — nothing here is shared with PM/supervisor/
+  admin pages, which keep .entries-table.
+*/
+.logout-button {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .top-nav.nav-resident {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+
+  .top-nav.nav-resident .nav-link {
+    text-align: center;
+    padding: 10px 4px;
+  }
+}
+
+.home-header {
+  margin-bottom: 20px;
+}
+
+.home-header-name {
+  margin: 0;
+}
+
+.home-header-unit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin: 2px 0 0;
+}
+
+.home-primary-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 68px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--surface);
+  text-decoration: none;
+  margin-bottom: 22px;
+}
+
+.home-primary-action:hover {
+  background: var(--accent-strong);
+}
+
+.home-primary-action-title {
+  font-family: var(--display);
+  text-transform: uppercase;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.home-primary-action-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.home-section {
+  margin-bottom: 24px;
+}
+
+.home-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.home-section-eyebrow {
+  display: block;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.expected-now-card {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 15px 16px;
+  margin-bottom: 12px;
+}
+
+.expected-now-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.expected-now-name {
+  font-family: var(--display);
+  text-transform: uppercase;
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.expected-now-window {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin: 0 0 12px;
+}
+
+/* Text on a filled --flag background, so the 11px floor binds — see index.css's design-token rules. */
+.not-arrived-pill {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--flag);
+  background: var(--flag-tint);
+  border: 1px solid var(--flag);
+  border-radius: 3px;
+  padding: 4px 8px;
+}
+
+.expected-now-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface-sunken);
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.expected-now-code {
+  font-family: var(--stencil);
+  font-weight: 800;
+  font-size: 30px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.expected-now-copy {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--accent-tint);
+  color: var(--accent-strong);
+  font-family: var(--display);
+  text-transform: uppercase;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.expected-now-resend {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.recent-visit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--surface);
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--rule);
+  border-left: 3px solid var(--ok);
+}
+
+.recent-visit-row:first-child {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+.recent-visit-row:last-child {
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+  border-bottom: none;
+}
+
+.recent-visit-name {
+  font-size: 14px;
+}
+
+.recent-visit-category {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.recent-visit-meta {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.my-car-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.my-car-row:last-child {
+  border-bottom: none;
+}
+
+.my-car-reg {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  flex: 1;
+}
+
+/* Active (Pending Invitations, rows instead of a table) */
+.active-row {
+  background: var(--surface);
+  border-left: 3px solid var(--rule);
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.active-row.valid-now {
+  border-left-color: var(--ok);
+}
+
+.active-row.expiring-soon {
+  border-left-color: var(--flag);
+}
+
+.active-row-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.active-row-purpose {
+  color: var(--text-muted);
+}
+
+.active-row-window {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.active-row-code-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.active-row-code {
+  font-family: var(--stencil);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.05em;
+}
+
+.active-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.active-row-actions button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--display);
+  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .empty {
   color: var(--text-muted);
   font-size: 14px;
