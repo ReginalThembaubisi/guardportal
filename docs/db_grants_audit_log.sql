@@ -65,6 +65,10 @@ GRANT UPDATE ON property_security_platform.shift TO 'property_security_app'@'loc
 -- incident_media is write-once (no UPDATE/DELETE needed, same as
 -- checkpoint_scan) so it isn't listed here.
 GRANT UPDATE ON property_security_platform.incident TO 'property_security_app'@'localhost';
+-- Shift roster: a Supervisor removes a wrongly-added/cancelled row via
+-- deleted_at, same as resident/guard — not append-only, so gets the same
+-- UPDATE, DELETE pair as those (the app itself only ever issues UPDATE).
+GRANT UPDATE, DELETE ON property_security_platform.shift_schedule TO 'property_security_app'@'localhost';
 
 GRANT UPDATE, DELETE ON property_security_platform.property TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE, DELETE ON property_security_platform.unit TO 'property_security_app'@'127.0.0.1';
@@ -77,6 +81,7 @@ GRANT UPDATE, DELETE ON property_security_platform.invitation TO 'property_secur
 GRANT UPDATE ON property_security_platform.visitor_entry TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE ON property_security_platform.shift TO 'property_security_app'@'127.0.0.1';
 GRANT UPDATE ON property_security_platform.incident TO 'property_security_app'@'127.0.0.1';
+GRANT UPDATE, DELETE ON property_security_platform.shift_schedule TO 'property_security_app'@'127.0.0.1';
 
 FLUSH PRIVILEGES;
 
