@@ -5,6 +5,7 @@ import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import MePage from "./pages/MePage";
 import PatrolPage from "./pages/PatrolPage";
+import QueuePage from "./pages/QueuePage";
 import ReportPage from "./pages/ReportPage";
 import WalkInPage from "./pages/WalkInPage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
@@ -50,6 +51,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <MePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/queue"
+        element={
+          <ProtectedRoute>
+            <QueuePage />
           </ProtectedRoute>
         }
       />

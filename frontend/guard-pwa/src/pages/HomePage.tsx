@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { apiFetch, ApiError } from "../api/client";
 import type { OccupancyResponse, ShiftResponse, ShiftScheduleResponse, VisitorCategory, VisitorEntryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { useOfflineQueue } from "../OfflineQueueContext";
 import Layout from "../components/Layout";
 import ToleranceBadge from "../components/ToleranceBadge";
 import { getCurrentCoordinates } from "../geo";
-import { usePatrolStatus } from "../patrol";
+import { usePatrolStatus, toLocalDateTimeParam } from "../patrol";
 
 const VISITOR_CATEGORIES: VisitorCategory[] = ["VISITOR", "CONTRACTOR", "DELIVERY", "STAFF"];
 
@@ -35,7 +36,9 @@ function formatCountdown(minutes: number): string {
 
 export default function HomePage() {
   const { auth, setPropertyId, setOpenShift } = useAuth();
+  const { pendingClockOut, rejectedClockOut, enqueueAction, dismiss } = useOfflineQueue();
   const [error, setError] = useState<string | null>(null);
+  const [queueError, setQueueError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [todayShift, setTodayShift] = useState<ShiftScheduleResponse | null>(null);
   const [upcomingShifts, setUpcomingShifts] = useState<ShiftScheduleResponse[] | null>(null);
@@ -76,7 +79,7 @@ export default function HomePage() {
   }, [openShift]);
 
   async function handleClockIn() {
-    if (!auth) return;
+    if (!auth || pendingClockOut) return;
     setError(null);
     setBusy(true);
     try {
@@ -108,21 +111,56 @@ export default function HomePage() {
   async function handleClockOut() {
     if (!auth) return;
     setError(null);
+    setQueueError(null);
     setBusy(true);
+    const claimedAt = new Date().toISOString();
     try {
       const coords = await getCurrentCoordinates();
-      const shift = await apiFetch<ShiftResponse>("/api/v1/shifts/clock-out", {
-        method: "POST",
-        token: auth.token,
-        body: { latitude: coords.latitude, longitude: coords.longitude },
-      });
-      setOpenShift(null);
-      setOccupancy(null);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 404) {
+      const idempotencyKey = crypto.randomUUID();
+      try {
+        await apiFetch<ShiftResponse>("/api/v1/shifts/clock-out", {
+          method: "POST",
+          token: auth.token,
+          body: {
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            clientClaimedAt: toLocalDateTimeParam(new Date(claimedAt)),
+          },
+          idempotencyKey,
+        });
         setOpenShift(null);
+        setOccupancy(null);
+      } catch (err) {
+        if (err instanceof ApiError) {
+          if (err.status === 404) {
+            setOpenShift(null);
+          } else {
+            setError(err.message);
+          }
+        } else {
+          // Network error — queue the clock-out
+          try {
+            await enqueueAction({
+              type: "CLOCK_OUT",
+              path: "/api/v1/shifts/clock-out",
+              body: {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+                clientClaimedAt: toLocalDateTimeParam(new Date(claimedAt)),
+              },
+              clientClaimedAt: claimedAt,
+            });
+          } catch (qErr) {
+            const msg =
+              qErr instanceof DOMException && qErr.name === "QuotaExceededError"
+                ? "Storage full — free space and try again. Your clock-out was not saved."
+                : "Failed to save clock-out locally. Please try again or note the time manually.";
+            setQueueError(msg);
+          }
+        }
       }
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Clock-out failed");
+    } catch (geoErr) {
+      setError(geoErr instanceof Error ? geoErr.message : "Could not get your location");
     } finally {
       setBusy(false);
     }
@@ -168,32 +206,49 @@ export default function HomePage() {
 
       <div className="screen-content">
         {error && <p className="error">{error}</p>}
+        {queueError && <p className="error">{queueError}</p>}
 
         {!openShift && (
           <>
-            {todayShift ? (
-              <div className="next-shift-card">
-                <span className="eyebrow accent">Your next shift</span>
-                <p className="next-shift-property">{todayShift.propertyName}</p>
-                <span className="next-shift-detail">{formatShiftLine(todayShift, "Tonight")}</span>
-                {showCountdown && todayShift.startTime && (
-                  <span className="countdown-pill">{formatCountdown(minutesUntil(todayShift.shiftDate, todayShift.startTime))}</span>
-                )}
-                <button className="big-action-button" onClick={handleClockIn} disabled={busy}>
-                  {busy ? "Getting your location…" : "Clock in"}
-                </button>
-                <p className="big-action-caption">Records your location · flagged, never blocked</p>
+            {pendingClockOut ? (
+              <div className="ending-shift-card">
+                <span className="eyebrow flag">Ending shift</span>
+                <p className="ending-shift-body">
+                  Your clock-out is saved and will submit when you're back online.
+                </p>
+                <div className="queue-ts-row" style={{ marginBottom: 4 }}>
+                  <span className="queue-ts-label">Clocked out at</span>
+                  <span className="queue-ts-value">{new Date(pendingClockOut.clientClaimedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
+                </div>
+                <Link to="/queue" className="ending-shift-link">View outbox</Link>
               </div>
             ) : (
-              <div className="next-shift-card">
-                <p className="empty" style={{ margin: 0 }}>
-                  No shift scheduled for today.
-                </p>
-                <button className="big-action-button" onClick={handleClockIn} disabled={busy}>
-                  {busy ? "Getting your location…" : "Clock in"}
-                </button>
-                <p className="big-action-caption">Records your location · flagged, never blocked</p>
-              </div>
+              <>
+                {todayShift ? (
+                  <div className="next-shift-card">
+                    <span className="eyebrow accent">Your next shift</span>
+                    <p className="next-shift-property">{todayShift.propertyName}</p>
+                    <span className="next-shift-detail">{formatShiftLine(todayShift, "Tonight")}</span>
+                    {showCountdown && todayShift.startTime && (
+                      <span className="countdown-pill">{formatCountdown(minutesUntil(todayShift.shiftDate, todayShift.startTime))}</span>
+                    )}
+                    <button className="big-action-button" onClick={handleClockIn} disabled={busy || !!pendingClockOut}>
+                      {busy ? "Getting your location…" : "Clock in"}
+                    </button>
+                    <p className="big-action-caption">Records your location · flagged, never blocked</p>
+                  </div>
+                ) : (
+                  <div className="next-shift-card">
+                    <p className="empty" style={{ margin: 0 }}>
+                      No shift scheduled for today.
+                    </p>
+                    <button className="big-action-button" onClick={handleClockIn} disabled={busy || !!pendingClockOut}>
+                      {busy ? "Getting your location…" : "Clock in"}
+                    </button>
+                    <p className="big-action-caption">Records your location · flagged, never blocked</p>
+                  </div>
+                )}
+              </>
             )}
 
             {upcomingShifts && upcomingShifts.length > 0 && (
@@ -223,9 +278,32 @@ export default function HomePage() {
               <div style={{ display: "flex" }}>
                 <ToleranceBadge withinTolerance={openShift.clockInWithinTolerance} distanceMeters={openShift.clockInDistanceMeters} />
               </div>
-              <button className="danger-outline-button" onClick={handleClockOut} disabled={busy}>
-                {busy ? "Getting your location…" : "Clock out"}
-              </button>
+
+              {rejectedClockOut && (
+                <div className="rejected-clockout-banner">
+                  <span className="rejected-clockout-label">Clock-out rejected</span>
+                  <span className="rejected-clockout-reason">{rejectedClockOut.rejectedReason}</span>
+                  <div className="rejected-clockout-actions">
+                    <button className="danger-outline-button" onClick={handleClockOut} disabled={busy}>
+                      {busy ? "Getting your location…" : "Clock out"}
+                    </button>
+                    <button
+                      className="link-button"
+                      style={{ fontSize: 12 }}
+                      onClick={() => dismiss(rejectedClockOut.id)}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                  <Link to="/queue" className="ending-shift-link" style={{ marginTop: 4 }}>View outbox</Link>
+                </div>
+              )}
+
+              {!rejectedClockOut && (
+                <button className="danger-outline-button" onClick={handleClockOut} disabled={busy}>
+                  {busy ? "Getting your location…" : "Clock out"}
+                </button>
+              )}
             </div>
 
             <div className="count-strip">
