@@ -1,7 +1,10 @@
 package com.propertysecurity.platform.config;
 
+import com.propertysecurity.platform.idempotency.IdempotencyFilter;
+import com.propertysecurity.platform.idempotency.IdempotencyService;
 import com.propertysecurity.platform.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -28,6 +31,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final IdempotencyService idempotencyService;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -77,8 +81,27 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(idempotencyFilter(), JwtAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public IdempotencyFilter idempotencyFilter() {
+        return new IdempotencyFilter(idempotencyService);
+    }
+
+    /**
+     * IdempotencyFilter is NOT @Component — it is instantiated here and added to
+     * the security chain via addFilterAfter(). Declaring it as a @Bean without
+     * @Component prevents Spring Boot from also registering it as a standalone
+     * servlet filter, which would cause it to run twice per request.
+     */
+    @Bean
+    public FilterRegistrationBean<IdempotencyFilter> idempotencyFilterRegistration(IdempotencyFilter filter) {
+        FilterRegistrationBean<IdempotencyFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 }

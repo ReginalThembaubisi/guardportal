@@ -56,7 +56,8 @@ public class IncidentService {
     private String uploadsDir;
 
     public Incident create(Long guardUserId, String description, IncidentSeverity severity,
-                            BigDecimal latitude, BigDecimal longitude, List<MultipartFile> photos) {
+                            BigDecimal latitude, BigDecimal longitude,
+                            LocalDateTime clientClaimedAt, List<MultipartFile> photos) {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNullFetchUser(guardUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
 
@@ -73,6 +74,7 @@ public class IncidentService {
         incident.setLatitude(latitude);
         incident.setLongitude(longitude);
         incident.setReportedAt(LocalDateTime.now());
+        incident.setClientClaimedAt(clientClaimedAt);
 
         Incident saved = incidentRepository.save(incident);
 

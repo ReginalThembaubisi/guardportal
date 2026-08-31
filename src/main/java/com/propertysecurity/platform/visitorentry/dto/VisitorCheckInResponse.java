@@ -25,7 +25,8 @@ public record VisitorCheckInResponse(
         String vehicleRegistration,
         boolean vehicleRecognized,
         String recognizedVehicleOwnerName,
-        LocalDateTime enteredAt
+        LocalDateTime enteredAt,
+        LocalDateTime clientClaimedAt
 ) {
     public static VisitorCheckInResponse from(VisitorEntryService.CheckInResult result) {
         VisitorEntry entry = result.entry();
@@ -38,6 +39,7 @@ public record VisitorCheckInResponse(
                 entry.getVehicle() != null ? entry.getVehicle().getRegistration() : null,
                 result.vehicleRecognized(),
                 result.recognizedVehicleOwnerName(),
-                entry.getEnteredAt());
+                entry.getEnteredAt(),
+                entry.getClientClaimedAt());
     }
 }

@@ -73,6 +73,7 @@ public class PatrolService {
         scan.setShift(shift);
         scan.setGuard(guard);
         scan.setScannedAt(LocalDateTime.now());
+        scan.setClientClaimedAt(request.clientClaimedAt());
         scan.setLatitude(request.latitude());
         scan.setLongitude(request.longitude());
         scan.setDistanceMeters(distance);

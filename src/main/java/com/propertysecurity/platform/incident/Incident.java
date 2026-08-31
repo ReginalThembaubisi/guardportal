@@ -69,6 +69,9 @@ public class Incident {
     @Column(name = "reported_at", nullable = false)
     private LocalDateTime reportedAt;
 
+    @Column(name = "client_claimed_at")
+    private LocalDateTime clientClaimedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

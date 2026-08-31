@@ -46,8 +46,8 @@ public class VisitorEntryController {
         }
 
         VisitorEntryService.CheckInResult result = hasShortCode
-                ? visitorEntryService.checkInByShortCode(guardUserId, request.shortCode(), request.vehicleRegistration())
-                : visitorEntryService.checkIn(guardUserId, request.qrToken(), request.vehicleRegistration());
+                ? visitorEntryService.checkInByShortCode(guardUserId, request.shortCode(), request.vehicleRegistration(), request.clientClaimedAt())
+                : visitorEntryService.checkIn(guardUserId, request.qrToken(), request.vehicleRegistration(), request.clientClaimedAt());
         return VisitorCheckInResponse.from(result);
     }
 

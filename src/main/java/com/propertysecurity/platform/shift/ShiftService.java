@@ -12,6 +12,7 @@ import com.propertysecurity.platform.shift.dto.LocationRequest;
 import com.propertysecurity.platform.shiftschedule.ShiftSchedule;
 import com.propertysecurity.platform.shiftschedule.ShiftScheduleService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ import java.util.Optional;
  * accuracy varies. An out-of-tolerance clock-in/out is flagged for later
  * review, never blocked.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -57,6 +59,7 @@ public class ShiftService {
         shift.setGuard(guard);
         shift.setProperty(property);
         shift.setClockInAt(clockInAt);
+        shift.setClientClaimedClockInAt(validatedClaim(location.clientClaimedAt(), null, clockInAt, guardUserId, "clock-in"));
         shift.setClockInLatitude(location.latitude());
         shift.setClockInLongitude(location.longitude());
         shift.setClockInDistanceMeters(check.distanceMeters());
@@ -85,7 +88,9 @@ public class ShiftService {
 
         GeoCheck check = checkLocation(shift.getProperty(), location);
 
-        shift.setClockOutAt(LocalDateTime.now());
+        LocalDateTime clockOutAt = LocalDateTime.now();
+        shift.setClockOutAt(clockOutAt);
+        shift.setClientClaimedClockOutAt(validatedClaim(location.clientClaimedAt(), shift.getClockInAt(), clockOutAt, guardUserId, "clock-out"));
         shift.setClockOutLatitude(location.latitude());
         shift.setClockOutLongitude(location.longitude());
         shift.setClockOutDistanceMeters(check.distanceMeters());
@@ -111,6 +116,27 @@ public class ShiftService {
         }
         int hour = clockInAt.getHour();
         return (hour >= 6 && hour < 18) ? ShiftType.DAY : ShiftType.NIGHT;
+    }
+
+    /**
+     * Stores the claim as-is but logs a warning when the phone clock looks
+     * wrong. Principle #3: flag, don't block. A phone with a skewed clock is
+     * an anomaly worth recording; rejecting the claim would destroy the only
+     * record of the guard's intent. lowerBound is the server clock-in time
+     * (null for clock-in itself where there is no prior bound).
+     */
+    private LocalDateTime validatedClaim(LocalDateTime claimed, LocalDateTime lowerBound,
+                                          LocalDateTime serverNow, Long guardUserId, String event) {
+        if (claimed == null) {
+            return null;
+        }
+        boolean tooEarly = lowerBound != null && claimed.isBefore(lowerBound);
+        boolean tooLate = claimed.isAfter(serverNow);
+        if (tooEarly || tooLate) {
+            log.warn("Guard {} submitted a {} claim ({}) outside the valid window [{}, {}]",
+                    guardUserId, event, claimed, lowerBound, serverNow);
+        }
+        return claimed;
     }
 
     private record GeoCheck(Integer distanceMeters, Boolean withinTolerance) {

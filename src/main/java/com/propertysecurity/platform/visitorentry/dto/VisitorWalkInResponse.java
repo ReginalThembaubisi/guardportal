@@ -24,6 +24,7 @@ public record VisitorWalkInResponse(
         boolean vehicleRecognized,
         String recognizedVehicleOwnerName,
         LocalDateTime enteredAt,
+        LocalDateTime clientClaimedAt,
         String notes
 ) {
     public static VisitorWalkInResponse from(VisitorEntryService.WalkInResult result) {
@@ -39,6 +40,7 @@ public record VisitorWalkInResponse(
                 result.vehicleRecognized(),
                 result.recognizedVehicleOwnerName(),
                 entry.getEnteredAt(),
+                entry.getClientClaimedAt(),
                 entry.getNotes());
     }
 }

@@ -20,6 +20,7 @@ public record IncidentResponse(
         BigDecimal latitude,
         BigDecimal longitude,
         LocalDateTime reportedAt,
+        LocalDateTime clientClaimedAt,
         List<IncidentMediaResponse> media,
         LocalDateTime createdAt
 ) {
@@ -36,6 +37,7 @@ public record IncidentResponse(
                 incident.getLatitude(),
                 incident.getLongitude(),
                 incident.getReportedAt(),
+                incident.getClientClaimedAt(),
                 media,
                 incident.getCreatedAt());
     }

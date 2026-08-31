@@ -50,6 +50,9 @@ public class CheckpointScan {
     @Column(name = "scanned_at", nullable = false)
     private LocalDateTime scannedAt;
 
+    @Column(name = "client_claimed_at")
+    private LocalDateTime clientClaimedAt;
+
     @Column(name = "latitude", nullable = false, precision = 10, scale = 7)
     private BigDecimal latitude;
 

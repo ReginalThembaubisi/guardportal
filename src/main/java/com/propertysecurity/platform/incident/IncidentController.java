@@ -42,9 +42,10 @@ public class IncidentController {
             @RequestParam IncidentSeverity severity,
             @RequestParam BigDecimal latitude,
             @RequestParam BigDecimal longitude,
+            @RequestParam(required = false) java.time.LocalDateTime clientClaimedAt,
             @RequestParam(value = "photos", required = false) List<MultipartFile> photos) {
         Long guardUserId = (Long) authentication.getPrincipal();
-        Incident incident = incidentService.create(guardUserId, description, severity, latitude, longitude, photos);
+        Incident incident = incidentService.create(guardUserId, description, severity, latitude, longitude, clientClaimedAt, photos);
         return IncidentResponse.from(incident, incidentService.mediaFor(incident.getId()));
     }
 }

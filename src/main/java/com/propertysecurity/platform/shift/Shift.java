@@ -48,6 +48,9 @@ public class Shift {
     @Column(name = "clock_in_at", nullable = false)
     private LocalDateTime clockInAt;
 
+    @Column(name = "client_claimed_clock_in_at")
+    private LocalDateTime clientClaimedClockInAt;
+
     @Column(name = "clock_in_latitude", nullable = false, precision = 10, scale = 7)
     private BigDecimal clockInLatitude;
 
@@ -62,6 +65,9 @@ public class Shift {
 
     @Column(name = "clock_out_at")
     private LocalDateTime clockOutAt;
+
+    @Column(name = "client_claimed_clock_out_at")
+    private LocalDateTime clientClaimedClockOutAt;
 
     @Column(name = "clock_out_latitude", precision = 10, scale = 7)
     private BigDecimal clockOutLatitude;

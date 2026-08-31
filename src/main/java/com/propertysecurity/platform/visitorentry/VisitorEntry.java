@@ -74,6 +74,9 @@ public class VisitorEntry {
     @Column(name = "entered_at", nullable = false)
     private LocalDateTime enteredAt;
 
+    @Column(name = "client_claimed_at")
+    private LocalDateTime clientClaimedAt;
+
     @Column(name = "exited_at")
     private LocalDateTime exitedAt;
 

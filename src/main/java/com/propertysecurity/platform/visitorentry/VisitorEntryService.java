@@ -77,7 +77,7 @@ public class VisitorEntryService {
      * CLAUDE.md rule 2) and flags whether it's recognized as belonging to a
      * resident.
      */
-    public CheckInResult checkIn(Long guardUserId, String qrToken, String vehicleRegistration) {
+    public CheckInResult checkIn(Long guardUserId, String qrToken, String vehicleRegistration, LocalDateTime clientClaimedAt) {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
 
@@ -88,7 +88,7 @@ public class VisitorEntryService {
         validateTimeWindow(invitation);
         validateSameProperty(guard, invitation);
 
-        return performCheckIn(guard, invitation, guardUserId, vehicleRegistration);
+        return performCheckIn(guard, invitation, guardUserId, vehicleRegistration, clientClaimedAt);
     }
 
     /**
@@ -106,7 +106,7 @@ public class VisitorEntryService {
      * short_code_lookup_attempt (not audit_log — see that table's own
      * comment for why) so a token being hammered is visible.
      */
-    public CheckInResult checkInByShortCode(Long guardUserId, String shortCode, String vehicleRegistration) {
+    public CheckInResult checkInByShortCode(Long guardUserId, String shortCode, String vehicleRegistration, LocalDateTime clientClaimedAt) {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
 
@@ -123,7 +123,7 @@ public class VisitorEntryService {
         }
 
         shortCodeRateLimiter.recordSuccess(guardUserId);
-        return performCheckIn(guard, found.get(), guardUserId, vehicleRegistration);
+        return performCheckIn(guard, found.get(), guardUserId, vehicleRegistration, clientClaimedAt);
     }
 
     /** null means the invitation is PENDING and within its validity window — clear to check in. */
@@ -168,7 +168,7 @@ public class VisitorEntryService {
      * The caller has already established the invitation is PENDING, within
      * its validity window, and at the guard's property.
      */
-    private CheckInResult performCheckIn(Guard guard, Invitation invitation, Long guardUserId, String vehicleRegistration) {
+    private CheckInResult performCheckIn(Guard guard, Invitation invitation, Long guardUserId, String vehicleRegistration, LocalDateTime clientClaimedAt) {
         InvitationStatus previousStatus = invitation.getStatus();
         invitation.setStatus(InvitationStatus.USED);
         invitationRepository.save(invitation);
@@ -194,6 +194,7 @@ public class VisitorEntryService {
         entry.setCategory(VisitorCategory.VISITOR);
         entry.setProcessedByGuard(guard);
         entry.setEnteredAt(LocalDateTime.now());
+        entry.setClientClaimedAt(clientClaimedAt);
         entry.setApprovalStatus(ApprovalStatus.AUTO_APPROVED);
 
         VisitorEntry saved = visitorEntryRepository.save(entry);
@@ -239,6 +240,7 @@ public class VisitorEntryService {
      * Audited the same as every other visitor_entry write (CLAUDE.md rule 2).
      */
     public WalkInResult checkInWalkIn(Long guardUserId, WalkInVisitorRequest request) {
+        // clientClaimedAt comes in via request.clientClaimedAt()
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("No guard profile found for this account"));
 
@@ -265,6 +267,7 @@ public class VisitorEntryService {
         entry.setCategory(request.category() != null ? request.category() : VisitorCategory.VISITOR);
         entry.setProcessedByGuard(guard);
         entry.setEnteredAt(LocalDateTime.now());
+        entry.setClientClaimedAt(request.clientClaimedAt());
         entry.setApprovalStatus(ApprovalStatus.PENDING);
         entry.setNotes(request.purpose());
 
