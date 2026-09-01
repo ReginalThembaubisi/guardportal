@@ -985,6 +985,15 @@ form button[type="submit"]:disabled {
   text-decoration: line-through;
 }
 
+/* Anomalous but not blocked — flag-coloured dashed seal. Used for auto-closed
+   and CLIENT_CLAIMED_LATE shifts: the guard's intent is recorded, but the time
+   was not directly verified by the server at clock-out. */
+.seal.late {
+  color: var(--flag);
+  border-style: dashed;
+  background: transparent;
+}
+
 @keyframes stamp-thud {
   0% {
     transform: rotate(-2deg) scale(2);
@@ -1199,4 +1208,76 @@ form button[type="submit"]:disabled {
 .incident-status-select {
   max-width: 200px;
   margin-top: 10px;
+}
+
+/* ── shift list (supervisor / admin view) ── */
+.shift-list {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.shift-row {
+  background: var(--surface);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--rule);
+  border-left: 3px solid transparent;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.shift-row:last-child {
+  border-bottom: none;
+}
+
+/* Open shift: never closed, not by guard or roster — flag for attention */
+.shift-row.shift-open {
+  border-left-color: var(--danger);
+}
+
+/* Auto-closed or end-unverified: anomaly flagged, not blocked */
+.shift-row.shift-auto-closed,
+.shift-row.shift-unverified {
+  border-left-color: var(--flag);
+}
+
+.shift-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.shift-row-guard {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.shift-row-time {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.shift-row-open-label {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.shift-row-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.shift-row-ordinal {
+  font-size: 12px;
+  color: var(--flag);
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.shift-row-seal {
+  flex-shrink: 0;
+  padding-top: 2px;
 }

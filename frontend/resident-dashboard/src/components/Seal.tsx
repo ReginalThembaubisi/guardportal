@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type SealState = "pending" | "cleared" | "flagged" | "unverified" | "denied";
+export type SealState = "pending" | "cleared" | "flagged" | "unverified" | "denied" | "late";
 
 /**
  * The one verification mark every surface shares — reserved for genuine

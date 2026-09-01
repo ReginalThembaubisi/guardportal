@@ -294,6 +294,26 @@ export interface UserResponse {
   createdAt: string;
 }
 
+export type ClockOutSource = "CLIENT_CLAIMED_LATE" | "ROSTER_AUTO_CLOSED";
+
+export interface ShiftSummaryResponse {
+  id: number;
+  guardId: number;
+  guardName: string;
+  propertyId: number;
+  propertyName: string;
+  clockInAt: string;
+  clockOutAt: string | null;
+  shiftType: ShiftType;
+  clockOutSource: ClockOutSource | null;
+  weekAutoCloseOrdinal: number;
+  clockInWithinTolerance: boolean | null;
+  clockInDistanceMeters: number | null;
+  clockOutWithinTolerance: boolean | null;
+  clockOutDistanceMeters: number | null;
+  createdAt: string;
+}
+
 export interface AuditVerificationResponse {
   valid: boolean;
   firstBrokenId: number | null;

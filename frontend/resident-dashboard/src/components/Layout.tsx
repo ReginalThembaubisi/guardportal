@@ -84,6 +84,9 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/shift-schedule" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Shift Schedule
           </NavLink>
+          <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Shifts
+          </NavLink>
           <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Incidents
           </NavLink>
@@ -108,6 +111,9 @@ export default function Layout({ title, children }: { title: string; children: R
           </NavLink>
           <NavLink to="/admin/audit" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Audit
+          </NavLink>
+          <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Shifts
           </NavLink>
         </nav>
       )}
