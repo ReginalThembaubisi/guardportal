@@ -90,6 +90,12 @@ public class Shift {
     @Column(name = "shift_type", length = 10)
     private ShiftType shiftType;
 
+    /** Null = server-confirmed clock-out (normal path). Non-null = server could not vouch
+     *  for the claimed time — see ClockOutSource for values and reasoning. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "clock_out_source", length = 30)
+    private ClockOutSource clockOutSource;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

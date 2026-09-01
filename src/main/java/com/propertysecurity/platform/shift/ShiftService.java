@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,6 +42,11 @@ public class ShiftService {
 
     @Value("${app.geo.default-tolerance-meters:150}")
     private int defaultToleranceMeters;
+
+    /** A claimed clock-out time more than this far behind server-now is flagged CLIENT_CLAIMED_LATE.
+     *  Normal offline queue flush arrives within a shift window (typically < 12h);
+     *  manual late submissions from expired queue entries arrive 72h+ after the claimed time. */
+    private static final Duration CLOCK_OUT_STALENESS_THRESHOLD = Duration.ofHours(4);
 
     public Shift clockIn(Long guardUserId, LocationRequest location) {
         Guard guard = guardRepository.findByUser_IdAndDeletedAtIsNull(guardUserId)
@@ -89,12 +95,19 @@ public class ShiftService {
         GeoCheck check = checkLocation(shift.getProperty(), location);
 
         LocalDateTime clockOutAt = LocalDateTime.now();
+        LocalDateTime claimedClockOutAt = validatedClaim(location.clientClaimedAt(), shift.getClockInAt(), clockOutAt, guardUserId, "clock-out");
         shift.setClockOutAt(clockOutAt);
-        shift.setClientClaimedClockOutAt(validatedClaim(location.clientClaimedAt(), shift.getClockInAt(), clockOutAt, guardUserId, "clock-out"));
+        shift.setClientClaimedClockOutAt(claimedClockOutAt);
         shift.setClockOutLatitude(location.latitude());
         shift.setClockOutLongitude(location.longitude());
         shift.setClockOutDistanceMeters(check.distanceMeters());
         shift.setClockOutWithinTolerance(check.withinTolerance());
+
+        ClockOutSource source = null;
+        if (claimedClockOutAt != null && Duration.between(claimedClockOutAt, clockOutAt).compareTo(CLOCK_OUT_STALENESS_THRESHOLD) > 0) {
+            source = ClockOutSource.CLIENT_CLAIMED_LATE;
+        }
+        shift.setClockOutSource(source);
 
         Shift saved = shiftRepository.save(shift);
         auditLogService.record("shift", saved.getId(), AuditAction.UPDATE, guardUserId,

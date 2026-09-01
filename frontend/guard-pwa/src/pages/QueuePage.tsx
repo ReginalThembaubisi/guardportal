@@ -1,4 +1,8 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch, ApiError } from "../api/client";
+import type { ShiftResponse } from "../api/types";
+import { useAuth } from "../auth/AuthContext";
 import { useOfflineQueue } from "../OfflineQueueContext";
 import Layout from "../components/Layout";
 import type { QueueEntry, QueueEntryStatus, QueueEntryType } from "../offlineQueue";
@@ -13,7 +17,7 @@ const STATUS_LABELS: Record<QueueEntryStatus, string> = {
   pending: "Queued",
   in_flight: "Sending…",
   rejected: "Rejected",
-  expired: "Expired",
+  expired: "Sending window closed",
 };
 
 function formatTime(iso: string): string {
@@ -25,10 +29,25 @@ function formatTime(iso: string): string {
   });
 }
 
-function EntryCard({ entry, onDismiss }: { entry: QueueEntry; onDismiss: (id: string) => void }) {
-  const showDismiss = entry.status === "expired";
+type LateResult =
+  | { kind: "closed"; message: string }
+  | { kind: "already_closed"; detail: string }
+  | { kind: "error"; message: string };
+
+interface EntryCardProps {
+  entry: QueueEntry;
+  onDismiss: (id: string) => void;
+  onSubmitLate: (entry: QueueEntry) => void;
+  submittingId: string | null;
+  lateResult: LateResult | null;
+}
+
+function EntryCard({ entry, onDismiss, onSubmitLate, submittingId, lateResult }: EntryCardProps) {
+  const isExpiredClockOut = entry.status === "expired" && entry.type === "CLOCK_OUT";
+  const showDismiss = entry.status === "expired" && !isExpiredClockOut;
   const statusClass = `queue-status-badge queue-status-${entry.status}`;
   const cardClass = `queue-entry-card queue-entry-${entry.status}`;
+  const isSending = submittingId === entry.id;
 
   return (
     <div className={cardClass}>
@@ -52,8 +71,46 @@ function EntryCard({ entry, onDismiss }: { entry: QueueEntry; onDismiss: (id: st
         <p className="queue-entry-reason">{entry.rejectedReason}</p>
       )}
 
-      {entry.status === "expired" && (
-        <p className="queue-entry-reason">This action was held for more than 72 hours and was not submitted. Your shift remains open on the server.</p>
+      {isExpiredClockOut && (
+        <>
+          <p className="queue-entry-reason">
+            Automatic retry closed after 72 hours. Submit now to close your shift using the claimed time above.
+          </p>
+          {lateResult && lateResult.kind === "already_closed" && (
+            <div className="queue-late-info">
+              <p className="queue-late-info-text">
+                Your shift is already closed — nothing more to do.
+                {lateResult.detail ? ` ${lateResult.detail}` : ""}
+              </p>
+            </div>
+          )}
+          {lateResult && lateResult.kind === "closed" && (
+            <div className="queue-late-info">
+              <p className="queue-late-info-text">{lateResult.message}</p>
+            </div>
+          )}
+          {lateResult && lateResult.kind === "error" && (
+            <p className="queue-entry-reason" style={{ color: "var(--danger)" }}>{lateResult.message}</p>
+          )}
+          {!lateResult && (
+            <>
+              <button
+                className="queue-late-submit-button"
+                onClick={() => onSubmitLate(entry)}
+                disabled={isSending}
+              >
+                {isSending ? "Submitting…" : "Submit late clock-out"}
+              </button>
+              <p className="queue-late-consequence">
+                This closes the shift and records the time as unverified.
+              </p>
+            </>
+          )}
+        </>
+      )}
+
+      {entry.status === "expired" && !isExpiredClockOut && (
+        <p className="queue-entry-reason">This action was held for more than 72 hours and was not submitted.</p>
       )}
 
       {showDismiss && (
@@ -71,9 +128,52 @@ function EntryCard({ entry, onDismiss }: { entry: QueueEntry; onDismiss: (id: st
 
 export default function QueuePage() {
   const navigate = useNavigate();
+  const { auth, setOpenShift } = useAuth();
   const { entries, pendingCount, dismiss, retryNow } = useOfflineQueue();
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [lateResults, setLateResults] = useState<Record<string, LateResult>>({});
 
   const isEmpty = entries.length === 0;
+
+  async function handleSubmitLate(entry: QueueEntry) {
+    if (!auth) return;
+    setSubmittingId(entry.id);
+    try {
+      await apiFetch<ShiftResponse>("/api/v1/shifts/clock-out", {
+        method: "POST",
+        token: auth.token,
+        body: entry.body,
+        idempotencyKey: entry.id,
+      });
+      setOpenShift(null);
+      await dismiss(entry.id);
+      setLateResults((prev) => ({ ...prev, [entry.id]: { kind: "closed", message: "Shift closed." } }));
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 404 || err.status === 400) {
+          // Shift was already closed (e.g. supervisor did it) — good outcome for the guard.
+          setOpenShift(null);
+          await dismiss(entry.id);
+          setLateResults((prev) => ({
+            ...prev,
+            [entry.id]: { kind: "already_closed", detail: err.message },
+          }));
+        } else {
+          setLateResults((prev) => ({
+            ...prev,
+            [entry.id]: { kind: "error", message: err.message },
+          }));
+        }
+      } else {
+        setLateResults((prev) => ({
+          ...prev,
+          [entry.id]: { kind: "error", message: "No connection — try again when connected." },
+        }));
+      }
+    } finally {
+      setSubmittingId(null);
+    }
+  }
 
   return (
     <Layout title="Outbox">
@@ -96,7 +196,14 @@ export default function QueuePage() {
         ) : (
           <div className="queue-list">
             {entries.map((entry) => (
-              <EntryCard key={entry.id} entry={entry} onDismiss={dismiss} />
+              <EntryCard
+                key={entry.id}
+                entry={entry}
+                onDismiss={dismiss}
+                onSubmitLate={handleSubmitLate}
+                submittingId={submittingId}
+                lateResult={lateResults[entry.id] ?? null}
+              />
             ))}
           </div>
         )}

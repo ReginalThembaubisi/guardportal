@@ -112,6 +112,8 @@ export interface ShiftResponse {
   clockOutDistanceMeters: number | null;
   clockOutWithinTolerance: boolean | null;
   shiftType: ShiftType | null;
+  /** null = server-confirmed clock-out; non-null = server could not vouch for the claimed time */
+  clockOutSource: "CLIENT_CLAIMED_LATE" | null;
   createdAt: string;
 }
 

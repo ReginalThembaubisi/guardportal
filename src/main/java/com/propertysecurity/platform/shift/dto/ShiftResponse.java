@@ -1,5 +1,6 @@
 package com.propertysecurity.platform.shift.dto;
 
+import com.propertysecurity.platform.shift.ClockOutSource;
 import com.propertysecurity.platform.shift.Shift;
 import com.propertysecurity.platform.shift.ShiftType;
 
@@ -24,6 +25,8 @@ public record ShiftResponse(
         Integer clockOutDistanceMeters,
         Boolean clockOutWithinTolerance,
         ShiftType shiftType,
+        /** Null = normal server-confirmed clock-out; non-null = server could not vouch for the claimed time. */
+        ClockOutSource clockOutSource,
         LocalDateTime createdAt
 ) {
     public static ShiftResponse from(Shift shift) {
@@ -45,6 +48,7 @@ public record ShiftResponse(
                 shift.getClockOutDistanceMeters(),
                 shift.getClockOutWithinTolerance(),
                 shift.getShiftType(),
+                shift.getClockOutSource(),
                 shift.getCreatedAt());
     }
 }
