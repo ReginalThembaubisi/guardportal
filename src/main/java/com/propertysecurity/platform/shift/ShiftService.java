@@ -74,7 +74,12 @@ public class ShiftService {
         Property property = guard.getProperty();
         GeoCheck check = checkLocation(property, location);
 
-        LocalDateTime clockInAt = LocalDateTime.now();
+        // All shift timestamps are stored as property-local wall-clock time so that
+        // shiftDate comparisons, night-shift midnight-crossing, and auto-close are
+        // all done in the same timezone as the roster.  LocalDateTime.now() uses the
+        // JVM zone, which may differ from the property zone on a cloud host.
+        ZoneId propertyZone = ZoneId.of(property.getTimezone());
+        LocalDateTime clockInAt = LocalDateTime.now(propertyZone);
 
         Shift shift = new Shift();
         shift.setGuard(guard);
@@ -109,7 +114,7 @@ public class ShiftService {
 
         GeoCheck check = checkLocation(shift.getProperty(), location);
 
-        LocalDateTime clockOutAt = LocalDateTime.now();
+        LocalDateTime clockOutAt = LocalDateTime.now(ZoneId.of(shift.getProperty().getTimezone()));
         LocalDateTime claimedClockOutAt = validatedClaim(location.clientClaimedAt(), shift.getClockInAt(), clockOutAt, guardUserId, "clock-out");
         shift.setClockOutAt(clockOutAt);
         shift.setClientClaimedClockOutAt(claimedClockOutAt);

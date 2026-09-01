@@ -75,6 +75,10 @@ app:
     # incident-close time. Cadence: job runs every 15 min, so worst-case
     # lag from rostered end to supervisor seeing auto-closed is ~105 min.
     auto-close-grace-minutes: ${SHIFT_AUTO_CLOSE_GRACE_MINUTES:90}
+    # Zone used for the lookback boundary in ShiftAutoCloseJob. Must match
+    # the convention in ShiftService (all timestamps stored as property-local
+    # wall-clock time). Override via SHIFT_TIMEZONE for non-ZA deployments.
+    timezone: ${SHIFT_TIMEZONE:Africa/Johannesburg}
 
 logging:
   level:
