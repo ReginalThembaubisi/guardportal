@@ -19,6 +19,9 @@ export default function CreateGuardPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [badgeNumber, setBadgeNumber] = useState("");
+  const [psiraNumber, setPsiraNumber] = useState("");
+  const [psiraGrade, setPsiraGrade] = useState("");
+  const [psiraExpiry, setPsiraExpiry] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<GuardResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -49,6 +52,9 @@ export default function CreateGuardPage() {
           email: email.trim(),
           password,
           badgeNumber: badgeNumber.trim() || undefined,
+          psiraNumber: psiraNumber.trim() || undefined,
+          psiraGrade: psiraGrade.trim() || undefined,
+          psiraExpiry: psiraExpiry || undefined,
         },
       });
       setCreated(guard);
@@ -57,6 +63,9 @@ export default function CreateGuardPage() {
       setEmail("");
       setPassword("");
       setBadgeNumber("");
+      setPsiraNumber("");
+      setPsiraGrade("");
+      setPsiraExpiry("");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to create guard");
     } finally {
@@ -119,6 +128,25 @@ export default function CreateGuardPage() {
           <label>
             Badge number (optional)
             <input type="text" value={badgeNumber} onChange={(e) => setBadgeNumber(e.target.value)} />
+          </label>
+          <label>
+            PSIRA registration number (optional)
+            <input type="text" value={psiraNumber} onChange={(e) => setPsiraNumber(e.target.value)} placeholder="e.g. 1234567890123" />
+          </label>
+          <label>
+            PSIRA grade (optional)
+            <select value={psiraGrade} onChange={(e) => setPsiraGrade(e.target.value)}>
+              <option value="">— not set —</option>
+              <option value="E">Grade E</option>
+              <option value="D">Grade D</option>
+              <option value="C">Grade C</option>
+              <option value="B">Grade B</option>
+              <option value="A">Grade A</option>
+            </select>
+          </label>
+          <label>
+            PSIRA expiry date (optional)
+            <input type="date" value={psiraExpiry} onChange={(e) => setPsiraExpiry(e.target.value)} />
           </label>
 
           <button type="submit" disabled={busy}>

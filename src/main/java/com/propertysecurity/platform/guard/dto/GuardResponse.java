@@ -2,6 +2,7 @@ package com.propertysecurity.platform.guard.dto;
 
 import com.propertysecurity.platform.guard.Guard;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record GuardResponse(
@@ -13,6 +14,9 @@ public record GuardResponse(
         Long propertyId,
         String propertyName,
         String badgeNumber,
+        String psiraNumber,
+        String psiraGrade,
+        LocalDate psiraExpiry,
         LocalDateTime createdAt
 ) {
     public static GuardResponse from(Guard guard) {
@@ -25,6 +29,9 @@ public record GuardResponse(
                 guard.getProperty().getId(),
                 guard.getProperty().getName(),
                 guard.getBadgeNumber(),
+                guard.getPsiraNumber(),
+                guard.getPsiraGrade(),
+                guard.getPsiraExpiry(),
                 guard.getCreatedAt());
     }
 }

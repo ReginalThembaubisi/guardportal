@@ -53,42 +53,39 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Dashboard
           </NavLink>
+          <NavLink to="/units" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Units
+          </NavLink>
+          <NavLink to="/residents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Residents
+          </NavLink>
           <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Shifts
           </NavLink>
           <NavLink to="/shifts/coverage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Coverage
           </NavLink>
-          <NavLink to="/residents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Residents
-          </NavLink>
-          <NavLink to="/checkpoints/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Add Checkpoint
-          </NavLink>
-          <NavLink to="/patrol-routes/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Add Patrol Route
-          </NavLink>
-          <NavLink to="/patrol-status" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Patrol Status
-          </NavLink>
           <NavLink to="/vehicle-history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Vehicle History
+            Vehicles
           </NavLink>
           <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Incidents
           </NavLink>
           <NavLink to="/visitor-history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Visitor History
+            Visitors
           </NavLink>
         </nav>
       )}
       {hasRole("SUPERVISOR") && (
         <nav className="top-nav">
+          <NavLink to="/guards" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Guards
+          </NavLink>
           <NavLink to="/guards/new" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Add Guard
           </NavLink>
           <NavLink to="/shift-schedule" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Shift Schedule
+            Roster
           </NavLink>
           <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Shifts
@@ -100,7 +97,7 @@ export default function Layout({ title, children }: { title: string; children: R
             Incidents
           </NavLink>
           <NavLink to="/visitor-history" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Visitor History
+            Visitors
           </NavLink>
         </nav>
       )}
@@ -108,9 +105,6 @@ export default function Layout({ title, children }: { title: string; children: R
         <nav className="top-nav">
           <NavLink to="/admin/properties" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Properties
-          </NavLink>
-          <NavLink to="/admin/units" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
-            Units
           </NavLink>
           <NavLink to="/admin/staff" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Staff

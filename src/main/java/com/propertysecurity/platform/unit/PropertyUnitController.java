@@ -16,15 +16,13 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Write operations only — per docs/build_plan.md Phase 1, unit management
- * is ADMIN-only. Reads are split into UnitReadController (see its own
- * docstring for why a separate class rather than a method-level
- * @PreAuthorize override) so a property manager can browse units on their
- * own property without being able to create/edit/delete them.
+ * Write operations — PROPERTY_MANAGER only (unit lifecycle is operational,
+ * not admin). Reads are split into UnitReadController so GUARD and ADMIN can
+ * browse units without write access.
  */
 @RestController
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('PROPERTY_MANAGER')")
 public class PropertyUnitController {
 
     private final PropertyUnitService unitService;

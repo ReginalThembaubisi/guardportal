@@ -31,13 +31,10 @@ public class GuardService {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * callerUserId is who's making the request — a SUPERVISOR (the role
-     * that actually oversees security staff on-site) or ADMIN, per the
-     * controller's @PreAuthorize. Was originally scoped to PROPERTY_MANAGER;
-     * moved here since guard staffing is a security-operations
-     * responsibility, not a building-management one. Same
-     * assertCanAccessProperty idiom as ResidentService/CheckpointService,
-     * just against PropertySupervisorRepository instead.
+     * callerUserId must be a SUPERVISOR (enforced at the controller). Guard
+     * creation is the guarding contractor's operational responsibility, not
+     * the property manager's or admin's. Verifies the caller is linked to
+     * the target property before creating the account.
      */
     public Guard create(Long callerUserId, GuardRequest request) {
         Property property = propertyRepository.findByIdAndDeletedAtIsNull(request.propertyId())
@@ -68,6 +65,9 @@ public class GuardService {
         guard.setUser(user);
         guard.setProperty(property);
         guard.setBadgeNumber(request.badgeNumber());
+        guard.setPsiraNumber(request.psiraNumber());
+        guard.setPsiraGrade(request.psiraGrade());
+        guard.setPsiraExpiry(request.psiraExpiry());
         return guardRepository.save(guard);
     }
 

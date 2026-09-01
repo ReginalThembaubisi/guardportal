@@ -1226,6 +1226,34 @@ form button[type="submit"]:disabled {
   color: var(--accent-strong);
 }
 
+/* ── PSIRA chips ── */
+.psira-grade-chip {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  background: var(--rule);
+  color: var(--secondary);
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+.psira-expiry {
+  font-size: 0.75rem;
+  color: var(--secondary);
+  margin-left: 4px;
+}
+
+.psira-expiry.expired {
+  color: var(--danger, #c0392b);
+}
+
+.text-muted {
+  color: var(--secondary);
+}
+
 /* ── shift list (supervisor / admin view) ── */
 .shift-list {
   border: 1px solid var(--rule);

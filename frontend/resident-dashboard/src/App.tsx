@@ -11,6 +11,8 @@ import CreateCheckpointPage from "./pages/CreateCheckpointPage";
 import CreatePatrolRoutePage from "./pages/CreatePatrolRoutePage";
 import PatrolStatusPage from "./pages/PatrolStatusPage";
 import CreateGuardPage from "./pages/CreateGuardPage";
+import GuardsPage from "./pages/GuardsPage";
+import UnitsPage from "./pages/UnitsPage";
 import ShiftSchedulePage from "./pages/ShiftSchedulePage";
 import ShiftListPage from "./pages/ShiftListPage";
 import ShiftCoveragePage from "./pages/ShiftCoveragePage";
@@ -77,6 +79,14 @@ export default function App() {
         }
       />
       <Route
+        path="/units"
+        element={
+          <ProtectedRoute role="PROPERTY_MANAGER">
+            <UnitsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/residents"
         element={
           <ProtectedRoute role="PROPERTY_MANAGER">
@@ -105,6 +115,14 @@ export default function App() {
         element={
           <ProtectedRoute role="PROPERTY_MANAGER">
             <PatrolStatusPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/guards"
+        element={
+          <ProtectedRoute role="SUPERVISOR">
+            <GuardsPage />
           </ProtectedRoute>
         }
       />

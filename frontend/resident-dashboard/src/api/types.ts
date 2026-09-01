@@ -189,6 +189,9 @@ export interface GuardResponse {
   propertyId: number;
   propertyName: string;
   badgeNumber: string | null;
+  psiraNumber: string | null;
+  psiraGrade: string | null;
+  psiraExpiry: string | null;
   createdAt: string;
 }
 

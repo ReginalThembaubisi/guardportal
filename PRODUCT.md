@@ -12,10 +12,10 @@ Six roles, three surfaces:
 
 - **RESIDENT** — phone + OTP login. Creates visitor invitations (QR + WhatsApp share), views their own visitor history and pending invitations, pre-registers their vehicles. Uses resident-dashboard from home, on desktop or mobile browser.
 - **GUARD** — email + password login. Stands at a property gate or on patrol, often outdoors, sometimes at night, on their own personal phone (BYOD, no dedicated hardware). Clocks in/out with GPS, scans visitor and checkpoint QR codes (camera-first with manual fallback), checks visitors in/out, reports incidents with photo evidence. Speed and legibility matter more than anything else on this surface — every extra second or misread tap is a real cost at a gate. Uses guard-pwa exclusively.
-- **PROPERTY_MANAGER** — staff account, linked to one or more properties. Manages residents, guards, checkpoints, patrol routes, and vehicle/incident history for their properties; views occupancy. Uses resident-dashboard's staff area, from a desk.
-- **SUPERVISOR** — staff account, linked to one or more properties (supervisor-property link exists specifically to support incident visibility). Views and triages incidents. Uses resident-dashboard's staff area.
+- **PROPERTY_MANAGER** — the client. Estate manager or managing agent, linked to one or more properties. Owns the property, the units, and the residents — creates and manages units and residents, reviews vehicle and incident history, views occupancy and shift coverage to verify the guarding service they're paying for. Uses resident-dashboard's staff area, from a desk.
+- **SUPERVISOR** — the supplier. Staff account for the guarding contractor, linked to one or more properties. Creates and manages guard accounts (including PSIRA registration details), writes the shift roster, monitors live coverage, verifies shifts, and investigates incidents. Field staff rather than desk staff: frequently operating from a phone at a gate at night, not from a desk. Note: supervisor screens are currently built for a desktop browser — a known gap, acknowledged rather than ignored.
 - **CLIENT** — role exists in the system; no dedicated screens built yet (a future aggregate dashboard across a client's properties is on the long-term list, not yet scoped).
-- **ADMIN** — back-office operator. Creates properties and units, creates staff accounts, links property managers/supervisors to properties, verifies the audit hash chain. Uses resident-dashboard's admin area.
+- **ADMIN** — back-office operator. Creates properties, creates staff accounts (property managers and supervisors), links staff to properties, verifies the audit hash chain. Uses resident-dashboard's admin area.
 
 ## Product Purpose
 
@@ -29,7 +29,8 @@ Visitor logging itself isn't the differentiator — any app can log a name at a 
 
 - A guard at a gate or on patrol: outdoors, sometimes at night, moving quickly, one hand often occupied, scanning a resident's or a checkpoint's QR code on their own phone. This is the highest-stakes, least forgiving surface in the product.
 - A resident at home: creating an invitation before a visitor arrives, or checking who's been to their unit.
-- A property manager or supervisor at a desk: triaging incidents, reviewing occupancy, provisioning guards and checkpoints for their property.
+- A property manager at a desk: verifying coverage, reviewing incidents and visitor history, managing units and residents — confirming they received the service they paid for.
+- A supervisor — often field staff rather than desk staff — writing the next roster, checking whether a guard clocked in, investigating an incident from the shift log.
 - An admin, rarely, doing back-office setup: onboarding a new property end-to-end (property → units → staff → links) and spot-checking that the audit chain hasn't been tampered with.
 - Three separate deployable apps share one backend: guard-pwa (guard-only), resident-dashboard (resident + all staff roles, including the admin area), and the Spring Boot API. There is no single unified shell — the visual identity has to hold across three independent apps, not one router.
 
@@ -44,11 +45,12 @@ Confirmed, built, and running:
 - Patrol checkpoints and routes, GPS-flagged scans, a missed-checkpoint status view
 - Incident reporting with photo evidence (severity: Low/Medium/High/Critical; status: Open/Investigating/Resolved)
 - A hash-chained, server-timestamped audit log covering every write to the operationally significant tables, with a chain-verification check exposed to admins
+- Evidence-pack PDF export for an incident — cover page, shift record, visitor entries, audit rows with reproducible hashes, and a chain verification certificate; PROPERTY_MANAGER and ADMIN only, with every attempt logged
+- Guard records with optional PSIRA registration number, grade (A–E), and expiry date — displayed, never enforced
 - Soft-delete only, everywhere — nothing is ever hard-deleted
 
 Explicitly out of scope so far (do not imply these exist in the UI):
 - No live push/SMS notifications of any kind (dev-mode OTP/codes are shown on-screen, not sent)
-- No evidence-pack PDF export yet (flagged as a known, deliberately deferred gap)
 - No CLIENT-facing screens yet
 - Pre-pilot: no real client or property has used this system yet — "take it to a real client" is a stated future milestone, not something already true
 

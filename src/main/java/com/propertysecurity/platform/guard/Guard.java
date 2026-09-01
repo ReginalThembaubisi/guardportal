@@ -13,6 +13,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "guard")
 @Getter
@@ -30,4 +32,13 @@ public class Guard extends BaseEntity {
 
     @Column(name = "badge_number", length = 30)
     private String badgeNumber;
+
+    @Column(name = "psira_number", length = 20)
+    private String psiraNumber;
+
+    @Column(name = "psira_grade", length = 5)
+    private String psiraGrade;
+
+    @Column(name = "psira_expiry")
+    private LocalDate psiraExpiry;
 }
