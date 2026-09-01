@@ -7,8 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 /**
@@ -35,11 +34,6 @@ public class ShiftAutoCloseJob {
     @Value("${app.shift.auto-close-lookback-days:7}")
     private int lookbackDays;
 
-    // Shift timestamps are stored in property-local wall-clock time (see ShiftService).
-    // The lookback boundary must use the same zone so the JPQL >= comparison is sound.
-    @Value("${app.shift.timezone:Africa/Johannesburg}")
-    private String shiftTimezone;
-
     /**
      * Runs every 15 minutes. Worst-case lag from rostered end to supervisor
      * seeing the row as auto-closed: grace window + 15 min = 105 min.
@@ -47,9 +41,10 @@ public class ShiftAutoCloseJob {
      */
     @Scheduled(fixedRate = 900_000)
     public void run() {
-        // Default 7-day lookback: shifts open longer than that are a data-quality
-        // issue beyond the auto-close window (override via auto-close-lookback-days).
-        LocalDateTime lookback = LocalDateTime.now(ZoneId.of(shiftTimezone)).minusDays(lookbackDays);
+        // UTC boundary is always conservative relative to any positive-offset property zone
+        // (shifts stored in e.g. UTC+2 will always satisfy clock_in_at >= UTC-boundary).
+        // tryAutoClose does the exact per-property zone check; the lookback is just a filter.
+        LocalDateTime lookback = LocalDateTime.now(ZoneOffset.UTC).minusDays(lookbackDays);
         List<Shift> openShifts = shiftService.findOpenShiftsSince(lookback);
 
         int closed = 0;

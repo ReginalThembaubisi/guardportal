@@ -1,15 +1,20 @@
 # Known Gaps and Deferred Work
 
-## `clock_out_source` — no property-manager visibility (V15)
+## Pre-fix timezone rows — data caveat (2026-09-01)
 
-The `clock_out_source` column on `shift` records whether a guard's clock-out time could be
-verified by the server (`null` = normal path) or arrived too late for the server to vouch for
-it (`CLIENT_CLAIMED_LATE` = guard submitted via the expired queue entry path).
+`clock_in_at` and `clock_out_at` rows written before the timezone fix (commit 818257b) are
+JVM-local time; rows after are property-local (Africa/Johannesburg, UTC+2). On a dev machine
+running SAST these are identical. On a UTC cloud host they diverge by two hours, with no
+column distinguishing which convention applies. Cannot be repaired by inspection after the fact.
+Action before any non-dev deployment: confirm whether the target host ran in UTC before the fix;
+if so, identify the affected rows (by `created_at` < fix deploy time) and decide whether to
+offset them or leave them as a known anomaly. If the fix deploys before any non-dev data is
+written, no action needed.
 
-The column is only worth its cost if a human reads it. The right surface is a shift list or
-payroll export in the resident-dashboard property-manager screens — flagged rows could trigger
-a follow-up before payroll runs. That screen is out of scope for the current phase.
+## Shift list — resolved (commits A + B, 2026-09-01)
 
-**Until it is built, the flag sits unread in the database.** This is the unclosed shift problem
-one layer down: the anomaly is recorded but invisible to the person who needs to act on it.
-Track this alongside any resident-dashboard shift-reporting work in a future phase.
+`clock_out_source` is now readable. `GET /api/v1/shifts?propertyId=` (SUPERVISOR + ADMIN) serves
+all four states; the resident-dashboard `/shifts` page surfaces them with the correct visual
+treatment (`--flag` dashed seal for `CLIENT_CLAIMED_LATE` and `ROSTER_AUTO_CLOSED`, `--danger`
+left-border for never-closed open shifts). The roster auto-close job (`ROSTER_AUTO_CLOSED`) runs
+every 15 min at rostered end + 90 min grace.

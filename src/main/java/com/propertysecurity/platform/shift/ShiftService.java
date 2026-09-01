@@ -58,6 +58,11 @@ public class ShiftService {
     @Value("${app.geo.default-tolerance-meters:150}")
     private int defaultToleranceMeters;
 
+    // Fallback when a property has no timezone set. All operational properties should
+    // have this field populated at creation; this guards new rows and any legacy gap.
+    @Value("${app.shift.timezone:Africa/Johannesburg}")
+    private String defaultShiftTimezone;
+
     /** A claimed clock-out time more than this far behind server-now is flagged CLIENT_CLAIMED_LATE.
      *  Normal offline queue flush arrives within a shift window (typically < 12h);
      *  manual late submissions from expired queue entries arrive 72h+ after the claimed time. */
@@ -78,7 +83,7 @@ public class ShiftService {
         // shiftDate comparisons, night-shift midnight-crossing, and auto-close are
         // all done in the same timezone as the roster.  LocalDateTime.now() uses the
         // JVM zone, which may differ from the property zone on a cloud host.
-        ZoneId propertyZone = ZoneId.of(property.getTimezone());
+        ZoneId propertyZone = zoneFor(property);
         LocalDateTime clockInAt = LocalDateTime.now(propertyZone);
 
         Shift shift = new Shift();
@@ -114,7 +119,7 @@ public class ShiftService {
 
         GeoCheck check = checkLocation(shift.getProperty(), location);
 
-        LocalDateTime clockOutAt = LocalDateTime.now(ZoneId.of(shift.getProperty().getTimezone()));
+        LocalDateTime clockOutAt = LocalDateTime.now(zoneFor(shift.getProperty()));
         LocalDateTime claimedClockOutAt = validatedClaim(location.clientClaimedAt(), shift.getClockInAt(), clockOutAt, guardUserId, "clock-out");
         shift.setClockOutAt(clockOutAt);
         shift.setClientClaimedClockOutAt(claimedClockOutAt);
@@ -170,6 +175,11 @@ public class ShiftService {
                     guardUserId, event, claimed, lowerBound, serverNow);
         }
         return claimed;
+    }
+
+    private ZoneId zoneFor(Property p) {
+        String tz = p.getTimezone();
+        return ZoneId.of((tz != null && !tz.isBlank()) ? tz : defaultShiftTimezone);
     }
 
     private record GeoCheck(Integer distanceMeters, Boolean withinTolerance) {
@@ -236,7 +246,7 @@ public class ShiftService {
                 ? shiftDate.plusDays(1)
                 : shiftDate;
 
-        ZoneId zoneId = ZoneId.of(shift.getProperty().getTimezone());
+        ZoneId zoneId = zoneFor(shift.getProperty());
         ZonedDateTime effectiveEnd = ZonedDateTime.of(endDate, schedule.getEndTime(), zoneId);
         ZonedDateTime threshold = effectiveEnd.plusMinutes(graceMinutes);
 
