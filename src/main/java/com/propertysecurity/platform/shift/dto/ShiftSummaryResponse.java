@@ -28,9 +28,7 @@ public record ShiftSummaryResponse(
         ShiftType shiftType,
         ClockOutSource clockOutSource,
         int weekAutoCloseOrdinal,
-        Boolean clockInWithinTolerance,
         Integer clockInDistanceMeters,
-        Boolean clockOutWithinTolerance,
         Integer clockOutDistanceMeters,
         LocalDateTime createdAt
 ) {
@@ -46,9 +44,7 @@ public record ShiftSummaryResponse(
                 shift.getShiftType(),
                 shift.getClockOutSource(),
                 weekAutoCloseOrdinal,
-                shift.getClockInWithinTolerance(),
                 shift.getClockInDistanceMeters(),
-                shift.getClockOutWithinTolerance(),
                 shift.getClockOutDistanceMeters(),
                 shift.getCreatedAt());
     }

@@ -307,9 +307,7 @@ export interface ShiftSummaryResponse {
   shiftType: ShiftType;
   clockOutSource: ClockOutSource | null;
   weekAutoCloseOrdinal: number;
-  clockInWithinTolerance: boolean | null;
   clockInDistanceMeters: number | null;
-  clockOutWithinTolerance: boolean | null;
   clockOutDistanceMeters: number | null;
   createdAt: string;
 }

@@ -5,7 +5,6 @@ import type { OccupancyResponse, ShiftResponse, ShiftScheduleResponse, VisitorCa
 import { useAuth } from "../auth/AuthContext";
 import { useOfflineQueue } from "../OfflineQueueContext";
 import Layout from "../components/Layout";
-import ToleranceBadge from "../components/ToleranceBadge";
 import { getCurrentCoordinates } from "../geo";
 import { usePatrolStatus, toLocalDateTimeParam } from "../patrol";
 
@@ -274,10 +273,6 @@ export default function HomePage() {
                 <span className="elapsed-time">{formatElapsed(openShift.clockInAt, now)}</span>
                 <span className="elapsed-since">since {new Date(openShift.clockInAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}</span>
               </div>
-              <div style={{ display: "flex" }}>
-                <ToleranceBadge withinTolerance={openShift.clockInWithinTolerance} distanceMeters={openShift.clockInDistanceMeters} />
-              </div>
-
               {rejectedClockOut && (
                 <div className="rejected-clockout-banner">
                   <span className="rejected-clockout-label">Clock-out rejected</span>

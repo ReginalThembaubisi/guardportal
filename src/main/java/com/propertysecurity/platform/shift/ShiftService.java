@@ -39,10 +39,10 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * First pass on GPS verification, not a hardened anti-fraud system —
- * guards use their own phones (no dedicated property devices), so GPS
- * accuracy varies. An out-of-tolerance clock-in/out is flagged for later
- * review, never blocked.
+ * Clock-in/out coordinates are recorded as evidence of where the guard was,
+ * not scored against a radius. Guards are dropped at the property and clock in
+ * on arrival; the coordinate is the record. Patrol checkpoint scans are the
+ * exception and still compare distance — see PatrolService.
  */
 @Slf4j
 @Service
@@ -57,9 +57,6 @@ public class ShiftService {
     private final ShiftScheduleRepository shiftScheduleRepository;
     private final PropertySupervisorRepository propertySupervisorRepository;
     private final PropertyManagerRepository propertyManagerRepository;
-
-    @Value("${app.geo.default-tolerance-meters:150}")
-    private int defaultToleranceMeters;
 
     // Fallback when a property has no timezone set. All operational properties should
     // have this field populated at creation; this guards new rows and any legacy gap.
@@ -97,7 +94,6 @@ public class ShiftService {
         shift.setClockInLatitude(location.latitude());
         shift.setClockInLongitude(location.longitude());
         shift.setClockInDistanceMeters(check.distanceMeters());
-        shift.setClockInWithinTolerance(check.withinTolerance());
         shift.setShiftType(resolveShiftType(guard.getId(), clockInAt));
 
         Shift saved = shiftRepository.save(shift);
@@ -129,7 +125,6 @@ public class ShiftService {
         shift.setClockOutLatitude(location.latitude());
         shift.setClockOutLongitude(location.longitude());
         shift.setClockOutDistanceMeters(check.distanceMeters());
-        shift.setClockOutWithinTolerance(check.withinTolerance());
 
         ClockOutSource source = null;
         if (claimedClockOutAt != null && Duration.between(claimedClockOutAt, clockOutAt).compareTo(CLOCK_OUT_STALENESS_THRESHOLD) > 0) {
@@ -140,8 +135,7 @@ public class ShiftService {
         Shift saved = shiftRepository.save(shift);
         auditLogService.record("shift", saved.getId(), AuditAction.UPDATE, guardUserId,
                 Map.of("clockOutAt", "null"),
-                Map.of("clockOutAt", saved.getClockOutAt(), "clockOutWithinTolerance",
-                        String.valueOf(saved.getClockOutWithinTolerance())));
+                Map.of("clockOutAt", saved.getClockOutAt()));
         return saved;
     }
 
@@ -185,18 +179,16 @@ public class ShiftService {
         return ZoneId.of((tz != null && !tz.isBlank()) ? tz : defaultShiftTimezone);
     }
 
-    private record GeoCheck(Integer distanceMeters, Boolean withinTolerance) {
-    }
+    private record GeoCheck(Integer distanceMeters) {}
 
-    /** Null distance/withinTolerance when the property has no known location yet to compare against. */
+    /** Null distance when the property has no known location yet. */
     private GeoCheck checkLocation(Property property, LocationRequest location) {
         if (property.getLatitude() == null || property.getLongitude() == null) {
-            return new GeoCheck(null, null);
+            return new GeoCheck(null);
         }
         int distance = GeoDistance.metersBetween(
                 property.getLatitude(), property.getLongitude(), location.latitude(), location.longitude());
-        int tolerance = property.getGeoToleranceMeters() != null ? property.getGeoToleranceMeters() : defaultToleranceMeters;
-        return new GeoCheck(distance, distance <= tolerance);
+        return new GeoCheck(distance);
     }
 
     private Map<String, Object> snapshot(Shift shift) {
@@ -205,7 +197,6 @@ public class ShiftService {
         map.put("propertyId", shift.getProperty().getId());
         map.put("clockInAt", shift.getClockInAt());
         map.put("clockInDistanceMeters", shift.getClockInDistanceMeters());
-        map.put("clockInWithinTolerance", shift.getClockInWithinTolerance());
         return map;
     }
 
