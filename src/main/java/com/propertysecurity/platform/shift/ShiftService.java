@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -267,15 +266,10 @@ public class ShiftService {
     // ── Supervisor shift list ─────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public List<ShiftSummaryResponse> listForProperty(Long callerUserId, Long propertyId, ShiftFlag flag) {
+    public List<ShiftSummaryResponse> listForProperty(Long callerUserId, Long propertyId) {
         assertCanAccessProperty(callerUserId, propertyId);
-        Pageable page = PageRequest.of(0, 50);
-        List<Shift> shifts = switch (flag) {
-            case FLAGGED       -> shiftRepository.findFlaggedByPropertyIdOrderByClockInAtDesc(propertyId, page);
-            case LATE_CLOCKOUT -> shiftRepository.findByPropertyIdAndClockOutSourceOrderByClockInAtDesc(propertyId, ClockOutSource.CLIENT_CLAIMED_LATE, page);
-            case AUTO_CLOSED   -> shiftRepository.findByPropertyIdAndClockOutSourceOrderByClockInAtDesc(propertyId, ClockOutSource.ROSTER_AUTO_CLOSED, page);
-            case ALL           -> shiftRepository.findByPropertyIdOrderByClockInAtDesc(propertyId, page);
-        };
+        List<Shift> shifts = shiftRepository.findByPropertyIdOrderByClockInAtDesc(
+                propertyId, PageRequest.of(0, 50));
 
         List<ShiftSummaryResponse> result = new ArrayList<>(shifts.size());
         for (Shift shift : shifts) {

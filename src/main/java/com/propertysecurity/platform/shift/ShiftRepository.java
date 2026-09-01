@@ -24,13 +24,6 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
     @Query("select s from Shift s join fetch s.guard g join fetch g.user join fetch g.property where s.property.id = :propertyId order by s.clockInAt desc")
     List<Shift> findByPropertyIdOrderByClockInAtDesc(@Param("propertyId") Long propertyId, Pageable pageable);
 
-    /** Flagged shifts: any non-null clockOutSource (CLIENT_CLAIMED_LATE or ROSTER_AUTO_CLOSED), newest first. */
-    @Query("select s from Shift s join fetch s.guard g join fetch g.user join fetch g.property where s.property.id = :propertyId and s.clockOutSource is not null order by s.clockInAt desc")
-    List<Shift> findFlaggedByPropertyIdOrderByClockInAtDesc(@Param("propertyId") Long propertyId, Pageable pageable);
-
-    /** Shifts for a property filtered to a specific clockOutSource, newest first. */
-    @Query("select s from Shift s join fetch s.guard g join fetch g.user join fetch g.property where s.property.id = :propertyId and s.clockOutSource = :source order by s.clockInAt desc")
-    List<Shift> findByPropertyIdAndClockOutSourceOrderByClockInAtDesc(@Param("propertyId") Long propertyId, @Param("source") ClockOutSource source, Pageable pageable);
 
     /** Ordinal of this auto-closed shift among the guard's ROSTER_AUTO_CLOSED shifts in the same ISO week. */
     @Query("select count(s) from Shift s where s.guard.id = :guardId and s.clockOutSource = :source and s.clockInAt >= :weekStart and s.clockInAt <= :thisClockInAt")
