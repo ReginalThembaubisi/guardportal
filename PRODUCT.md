@@ -40,7 +40,7 @@ Confirmed, built, and running:
 - Walk-in/unexpected visitor logging, held at a PENDING approval state (no live approve/deny workflow yet — passive review only)
 - Vehicle capture at check-in with auto-recognition against resident-registered vehicles
 - Live occupancy dashboard grouped by category (Visitor / Contractor / Delivery / Staff)
-- Guard shift clock-in/out with GPS — flagged, never blocked, when outside a configurable tolerance radius; explicitly a first pass on verification, not hardened anti-fraud
+- Guard shift clock-in/out with GPS coordinates captured as evidence — never scored against a radius and never blocked. Guards are dropped at the property and clock in on arrival; the coordinate is the record.
 - Patrol checkpoints and routes, GPS-flagged scans, a missed-checkpoint status view
 - Incident reporting with photo evidence (severity: Low/Medium/High/Critical; status: Open/Investigating/Resolved)
 - A hash-chained, server-timestamped audit log covering every write to the operationally significant tables, with a chain-verification check exposed to admins
