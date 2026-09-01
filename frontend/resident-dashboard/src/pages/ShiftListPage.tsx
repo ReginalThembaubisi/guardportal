@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiFetch, ApiError } from "../api/client";
-import type { PropertyResponse, PropertySupervisorResponse, ShiftSummaryResponse } from "../api/types";
+import type { PropertyManagerResponse, PropertyResponse, PropertySupervisorResponse, ShiftSummaryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Seal from "../components/Seal";
 import Layout from "../components/Layout";
@@ -38,12 +38,14 @@ export default function ShiftListPage() {
     if (!auth) return;
     const endpoint = hasRole("ADMIN")
       ? "/api/v1/properties"
+      : hasRole("PROPERTY_MANAGER")
+      ? "/api/v1/property-managers/mine"
       : "/api/v1/property-supervisors/mine";
-    apiFetch<PropertyResponse[] | PropertySupervisorResponse[]>(endpoint, { token: auth.token })
+    apiFetch<PropertyResponse[] | PropertyManagerResponse[] | PropertySupervisorResponse[]>(endpoint, { token: auth.token })
       .then((data) => {
         const mapped = hasRole("ADMIN")
           ? (data as PropertyResponse[]).map((p) => ({ id: p.id, name: p.name }))
-          : (data as PropertySupervisorResponse[]).map((ps) => ({ id: ps.propertyId, name: ps.propertyName }));
+          : (data as PropertyManagerResponse[] | PropertySupervisorResponse[]).map((pm) => ({ id: pm.propertyId, name: pm.propertyName }));
         setPropertyOptions(mapped);
         if (mapped.length > 0) setPropertyId(mapped[0].id);
       })

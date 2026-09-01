@@ -53,6 +53,9 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Dashboard
           </NavLink>
+          <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Shifts
+          </NavLink>
           <NavLink to="/residents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Residents
           </NavLink>

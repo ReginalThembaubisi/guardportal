@@ -8,6 +8,7 @@ import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.guard.Guard;
 import com.propertysecurity.platform.guard.GuardRepository;
 import com.propertysecurity.platform.property.Property;
+import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
 import com.propertysecurity.platform.propertysupervisor.PropertySupervisorRepository;
 import com.propertysecurity.platform.shift.dto.LocationRequest;
 import com.propertysecurity.platform.shift.dto.ShiftSummaryResponse;
@@ -54,6 +55,7 @@ public class ShiftService {
     private final ShiftScheduleService shiftScheduleService;
     private final ShiftScheduleRepository shiftScheduleRepository;
     private final PropertySupervisorRepository propertySupervisorRepository;
+    private final PropertyManagerRepository propertyManagerRepository;
 
     @Value("${app.geo.default-tolerance-meters:150}")
     private int defaultToleranceMeters;
@@ -299,6 +301,10 @@ public class ShiftService {
     private void assertCanAccessProperty(Long callerUserId, Long propertyId) {
         boolean isAnySupervisor = propertySupervisorRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
         if (isAnySupervisor && !propertySupervisorRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
+            throw new AccessDeniedException("This property is not yours");
+        }
+        boolean isAnyPropertyManager = propertyManagerRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (isAnyPropertyManager && !propertyManagerRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
             throw new AccessDeniedException("This property is not yours");
         }
     }

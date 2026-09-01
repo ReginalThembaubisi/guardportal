@@ -59,7 +59,7 @@ public class ShiftController {
      * Four states are visible via clockOutSource + clockOutAt (see ShiftSummaryResponse).
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'PROPERTY_MANAGER', 'ADMIN')")
     public List<ShiftSummaryResponse> listForProperty(Authentication authentication, @RequestParam Long propertyId) {
         Long callerUserId = (Long) authentication.getPrincipal();
         return shiftService.listForProperty(callerUserId, propertyId);

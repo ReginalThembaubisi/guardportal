@@ -126,7 +126,7 @@ export default function App() {
       <Route
         path="/shifts"
         element={
-          <ProtectedRoute role={["SUPERVISOR", "ADMIN"]}>
+          <ProtectedRoute role={["SUPERVISOR", "PROPERTY_MANAGER", "ADMIN"]}>
             <ShiftListPage />
           </ProtectedRoute>
         }
