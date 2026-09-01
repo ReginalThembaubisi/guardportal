@@ -25,3 +25,8 @@ app:
     max-attempts: 5
   checkin:
     base-url: http://localhost:8080/checkin
+  shift:
+    auto-close-grace-minutes: 90
+    # Wider window for tests: some scenarios use shifts from 8-10 days ago to
+    # guarantee they're in a specific past ISO week and clearly past the grace window.
+    auto-close-lookback-days: 30

@@ -2,6 +2,7 @@ package com.propertysecurity.platform.shift;
 
 import com.propertysecurity.platform.shift.dto.LocationRequest;
 import com.propertysecurity.platform.shift.dto.ShiftResponse;
+import com.propertysecurity.platform.shift.dto.ShiftSummaryResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,8 +13,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/shifts")
@@ -48,5 +52,16 @@ public class ShiftController {
     public ShiftResponse clockOut(Authentication authentication, @Valid @RequestBody LocationRequest location) {
         Long guardUserId = (Long) authentication.getPrincipal();
         return ShiftResponse.from(shiftService.clockOut(guardUserId, location));
+    }
+
+    /**
+     * Supervisor/admin shift list for a property — at most 50 rows, newest first.
+     * Four states are visible via clockOutSource + clockOutAt (see ShiftSummaryResponse).
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public List<ShiftSummaryResponse> listForProperty(Authentication authentication, @RequestParam Long propertyId) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return shiftService.listForProperty(callerUserId, propertyId);
     }
 }

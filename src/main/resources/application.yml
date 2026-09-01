@@ -69,6 +69,12 @@ app:
     # through IncidentReadController.media, which checks the caller can
     # access the incident's property first.
     dir: ${UPLOADS_DIR:./uploads}
+  shift:
+    # Grace period after the rostered end before the auto-close job fires.
+    # 90 min covers a late relief (30–60 min lateness is routine) plus
+    # incident-close time. Cadence: job runs every 15 min, so worst-case
+    # lag from rostered end to supervisor seeing auto-closed is ~105 min.
+    auto-close-grace-minutes: ${SHIFT_AUTO_CLOSE_GRACE_MINUTES:90}
 
 logging:
   level:

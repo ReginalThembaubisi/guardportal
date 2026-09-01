@@ -8,18 +8,31 @@ import com.propertysecurity.platform.exception.ResourceNotFoundException;
 import com.propertysecurity.platform.guard.Guard;
 import com.propertysecurity.platform.guard.GuardRepository;
 import com.propertysecurity.platform.property.Property;
+import com.propertysecurity.platform.propertysupervisor.PropertySupervisorRepository;
 import com.propertysecurity.platform.shift.dto.LocationRequest;
+import com.propertysecurity.platform.shift.dto.ShiftSummaryResponse;
 import com.propertysecurity.platform.shiftschedule.ShiftSchedule;
+import com.propertysecurity.platform.shiftschedule.ShiftScheduleRepository;
 import com.propertysecurity.platform.shiftschedule.ShiftScheduleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -39,6 +52,8 @@ public class ShiftService {
     private final GuardRepository guardRepository;
     private final AuditLogService auditLogService;
     private final ShiftScheduleService shiftScheduleService;
+    private final ShiftScheduleRepository shiftScheduleRepository;
+    private final PropertySupervisorRepository propertySupervisorRepository;
 
     @Value("${app.geo.default-tolerance-meters:150}")
     private int defaultToleranceMeters;
@@ -174,5 +189,102 @@ public class ShiftService {
         map.put("clockInDistanceMeters", shift.getClockInDistanceMeters());
         map.put("clockInWithinTolerance", shift.getClockInWithinTolerance());
         return map;
+    }
+
+    // ── Auto-close job support ────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<Shift> findOpenShiftsSince(LocalDateTime lookback) {
+        return shiftRepository.findOpenShiftsSince(lookback);
+    }
+
+    /**
+     * Attempts to auto-close one shift. Returns true if the shift was closed,
+     * false if skipped (rule 1: already closed; rule 4: no eligible schedule).
+     * Runs in its own transaction so a failure on one shift does not roll back
+     * others already closed in the same job run.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean tryAutoClose(Shift shift, int graceMinutes) {
+        // Rule 1: guard's real clock-out always wins.
+        if (shift.getClockOutAt() != null) {
+            return false;
+        }
+
+        LocalDate shiftDate = shift.getClockInAt().toLocalDate();
+        Optional<ShiftSchedule> scheduleOpt = shiftScheduleRepository.findByGuard_IdAndShiftDateAndDeletedAtIsNull(
+                shift.getGuard().getId(), shiftDate);
+
+        // Rule 4: no roster row, no auto-close.
+        if (scheduleOpt.isEmpty()) {
+            return false;
+        }
+        ShiftSchedule schedule = scheduleOpt.get();
+        if (schedule.getEndTime() == null || schedule.getStartTime() == null) {
+            return false;
+        }
+
+        // Night-shift midnight-crossing rule: when end_time <= start_time, the
+        // effective end is on shift_date + 1 (a 24-h "ends when started" edge
+        // case also lands here and is treated the same way).
+        LocalDate endDate = schedule.getEndTime().compareTo(schedule.getStartTime()) <= 0
+                ? shiftDate.plusDays(1)
+                : shiftDate;
+
+        ZoneId zoneId = ZoneId.of(shift.getProperty().getTimezone());
+        ZonedDateTime effectiveEnd = ZonedDateTime.of(endDate, schedule.getEndTime(), zoneId);
+        ZonedDateTime threshold = effectiveEnd.plusMinutes(graceMinutes);
+
+        if (!ZonedDateTime.now(zoneId).isAfter(threshold)) {
+            return false;
+        }
+
+        // Rule 2: set clock_out_at to the rostered end time, not when the job ran.
+        LocalDateTime clockOutAt = effectiveEnd.toLocalDateTime();
+        shift.setClockOutAt(clockOutAt);
+        shift.setClockOutSource(ClockOutSource.ROSTER_AUTO_CLOSED);
+
+        Shift saved = shiftRepository.save(shift);
+
+        // Rule 5: actor is null — the system, not the guard.
+        auditLogService.record("shift", saved.getId(), AuditAction.UPDATE, null,
+                Map.of("clockOutAt", "null"),
+                Map.of("clockOutAt", saved.getClockOutAt(), "clockOutSource", ClockOutSource.ROSTER_AUTO_CLOSED.name()));
+
+        return true;
+    }
+
+    // ── Supervisor shift list ─────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<ShiftSummaryResponse> listForProperty(Long callerUserId, Long propertyId) {
+        assertCanAccessProperty(callerUserId, propertyId);
+        List<Shift> shifts = shiftRepository.findByPropertyIdOrderByClockInAtDesc(
+                propertyId, PageRequest.of(0, 50));
+
+        List<ShiftSummaryResponse> result = new ArrayList<>(shifts.size());
+        for (Shift shift : shifts) {
+            int ordinal = 0;
+            if (shift.getClockOutSource() == ClockOutSource.ROSTER_AUTO_CLOSED) {
+                LocalDateTime weekStart = shift.getClockInAt()
+                        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                        .toLocalDate().atStartOfDay();
+                long count = shiftRepository.countAutoClosedInWeekUpTo(
+                        shift.getGuard().getId(),
+                        ClockOutSource.ROSTER_AUTO_CLOSED,
+                        weekStart,
+                        shift.getClockInAt());
+                ordinal = (int) count;
+            }
+            result.add(ShiftSummaryResponse.from(shift, ordinal));
+        }
+        return result;
+    }
+
+    private void assertCanAccessProperty(Long callerUserId, Long propertyId) {
+        boolean isAnySupervisor = propertySupervisorRepository.existsByUser_IdAndDeletedAtIsNull(callerUserId);
+        if (isAnySupervisor && !propertySupervisorRepository.existsByUser_IdAndProperty_IdAndDeletedAtIsNull(callerUserId, propertyId)) {
+            throw new AccessDeniedException("This property is not yours");
+        }
     }
 }
