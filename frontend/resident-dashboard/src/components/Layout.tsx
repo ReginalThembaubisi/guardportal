@@ -56,6 +56,9 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Shifts
           </NavLink>
+          <NavLink to="/shifts/coverage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Coverage
+          </NavLink>
           <NavLink to="/residents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Residents
           </NavLink>
@@ -90,6 +93,9 @@ export default function Layout({ title, children }: { title: string; children: R
           <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Shifts
           </NavLink>
+          <NavLink to="/shifts/coverage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Coverage
+          </NavLink>
           <NavLink to="/incidents" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Incidents
           </NavLink>
@@ -117,6 +123,9 @@ export default function Layout({ title, children }: { title: string; children: R
           </NavLink>
           <NavLink to="/shifts" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Shifts
+          </NavLink>
+          <NavLink to="/shifts/coverage" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Coverage
           </NavLink>
         </nav>
       )}

@@ -22,4 +22,8 @@ public interface ShiftScheduleRepository extends JpaRepository<ShiftSchedule, Lo
 
     @Query("select s from ShiftSchedule s join fetch s.property join fetch s.guard g join fetch g.user where g.user.id = :guardUserId and s.shiftDate >= :from and s.deletedAt is null order by s.shiftDate asc, s.startTime asc")
     List<ShiftSchedule> findUpcomingForGuardUser(@Param("guardUserId") Long guardUserId, @Param("from") LocalDate from);
+
+    /** Coverage report: all rostered slots for a property within a date range, guard data fetched. */
+    @Query("select s from ShiftSchedule s join fetch s.guard g join fetch g.user where s.property.id = :propertyId and s.shiftDate >= :from and s.shiftDate <= :to and s.deletedAt is null order by s.shiftDate asc, g.user.fullName asc")
+    List<ShiftSchedule> findByPropertyAndDateRange(@Param("propertyId") Long propertyId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

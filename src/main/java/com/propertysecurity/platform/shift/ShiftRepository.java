@@ -27,4 +27,8 @@ public interface ShiftRepository extends JpaRepository<Shift, Long> {
     /** Ordinal of this auto-closed shift among the guard's ROSTER_AUTO_CLOSED shifts in the same ISO week. */
     @Query("select count(s) from Shift s where s.guard.id = :guardId and s.clockOutSource = :source and s.clockInAt >= :weekStart and s.clockInAt <= :thisClockInAt")
     long countAutoClosedInWeekUpTo(@Param("guardId") Long guardId, @Param("source") ClockOutSource source, @Param("weekStart") LocalDateTime weekStart, @Param("thisClockInAt") LocalDateTime thisClockInAt);
+
+    /** Coverage report: shifts for a property where clock_in_at falls within the window, guard data fetched. */
+    @Query("select s from Shift s join fetch s.guard g join fetch g.user where s.property.id = :propertyId and s.clockInAt >= :from and s.clockInAt < :to")
+    List<Shift> findByPropertyAndClockInRange(@Param("propertyId") Long propertyId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
 }

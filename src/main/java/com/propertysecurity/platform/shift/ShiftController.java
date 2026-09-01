@@ -1,10 +1,12 @@
 package com.propertysecurity.platform.shift;
 
 import com.propertysecurity.platform.shift.dto.LocationRequest;
+import com.propertysecurity.platform.shift.dto.ShiftCoverageSlot;
 import com.propertysecurity.platform.shift.dto.ShiftResponse;
 import com.propertysecurity.platform.shift.dto.ShiftSummaryResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -63,5 +66,20 @@ public class ShiftController {
     public List<ShiftSummaryResponse> listForProperty(Authentication authentication, @RequestParam Long propertyId) {
         Long callerUserId = (Long) authentication.getPrincipal();
         return shiftService.listForProperty(callerUserId, propertyId);
+    }
+
+    /**
+     * Rostered-vs-worked coverage for a property and date range.
+     * Each slot represents one scheduled shift: WORKED, OPEN (still clocked in), or NO_SHOW.
+     * No-show slots have null shift fields.
+     */
+    @GetMapping("/coverage")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'PROPERTY_MANAGER', 'ADMIN')")
+    public List<ShiftCoverageSlot> coverage(Authentication authentication,
+                                            @RequestParam Long propertyId,
+                                            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+                                            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        return shiftService.coverageForProperty(callerUserId, propertyId, from, to);
     }
 }

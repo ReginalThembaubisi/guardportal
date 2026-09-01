@@ -11,6 +11,7 @@ import com.propertysecurity.platform.property.Property;
 import com.propertysecurity.platform.propertymanager.PropertyManagerRepository;
 import com.propertysecurity.platform.propertysupervisor.PropertySupervisorRepository;
 import com.propertysecurity.platform.shift.dto.LocationRequest;
+import com.propertysecurity.platform.shift.dto.ShiftCoverageSlot;
 import com.propertysecurity.platform.shift.dto.ShiftSummaryResponse;
 import com.propertysecurity.platform.shiftschedule.ShiftSchedule;
 import com.propertysecurity.platform.shiftschedule.ShiftScheduleRepository;
@@ -294,6 +295,40 @@ public class ShiftService {
                 ordinal = (int) count;
             }
             result.add(ShiftSummaryResponse.from(shift, ordinal));
+        }
+        return result;
+    }
+
+    // ── Coverage report ───────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<ShiftCoverageSlot> coverageForProperty(Long callerUserId, Long propertyId, LocalDate from, LocalDate to) {
+        assertCanAccessProperty(callerUserId, propertyId);
+
+        List<ShiftSchedule> schedules = shiftScheduleRepository.findByPropertyAndDateRange(propertyId, from, to);
+
+        // Index actual shifts by (guardId, shiftDate derived from clockInAt).
+        LocalDateTime windowStart = from.atStartOfDay();
+        LocalDateTime windowEnd = to.plusDays(1).atStartOfDay();
+        Map<String, Shift> shiftIndex = new java.util.HashMap<>();
+        for (Shift s : shiftRepository.findByPropertyAndClockInRange(propertyId, windowStart, windowEnd)) {
+            String key = s.getGuard().getId() + ":" + s.getClockInAt().toLocalDate();
+            // Keep the most recent clock-in if more than one falls on the same date.
+            shiftIndex.merge(key, s, (existing, incoming) ->
+                    incoming.getClockInAt().isAfter(existing.getClockInAt()) ? incoming : existing);
+        }
+
+        List<ShiftCoverageSlot> result = new ArrayList<>(schedules.size());
+        for (ShiftSchedule schedule : schedules) {
+            String key = schedule.getGuard().getId() + ":" + schedule.getShiftDate();
+            Shift shift = shiftIndex.get(key);
+            if (shift == null) {
+                result.add(ShiftCoverageSlot.noShow(schedule));
+            } else if (shift.getClockOutAt() == null) {
+                result.add(ShiftCoverageSlot.open(schedule, shift));
+            } else {
+                result.add(ShiftCoverageSlot.worked(schedule, shift));
+            }
         }
         return result;
     }

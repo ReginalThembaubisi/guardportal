@@ -1281,3 +1281,67 @@ form button[type="submit"]:disabled {
   flex-shrink: 0;
   padding-top: 2px;
 }
+
+/* ── Coverage page ─────────────────────────────────────────────────────── */
+.coverage-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.coverage-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.coverage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.coverage-day {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.coverage-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+}
+.coverage-day-label { font-weight: 600; font-size: 14px; }
+.coverage-day-summary { display: flex; gap: 8px; font-size: 12px; }
+.cov-count { padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.cov-worked { background: color-mix(in srgb, var(--cleared) 15%, transparent); color: var(--cleared); }
+.cov-open   { background: color-mix(in srgb, var(--danger)  15%, transparent); color: var(--danger); }
+.cov-noshow { background: color-mix(in srgb, var(--flag)    15%, transparent); color: var(--flag); }
+
+.coverage-slot {
+  padding: 10px 12px;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg);
+}
+.coverage-slot:last-child { border-bottom: none; }
+.coverage-slot-worked  { border-left-color: var(--cleared); }
+.coverage-slot-open    { border-left-color: var(--danger); }
+.coverage-slot-no-show { border-left-color: var(--flag); }
+
+.coverage-slot-guard  { font-weight: 600; font-size: 14px; }
+.coverage-slot-sched  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+.coverage-slot-actual { font-size: 13px; margin-top: 3px; }
+.coverage-slot-badge  {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--flag) 15%, transparent);
+  color: var(--flag);
+  font-weight: 600;
+}

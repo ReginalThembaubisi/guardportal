@@ -314,6 +314,24 @@ export interface ShiftSummaryResponse {
   createdAt: string;
 }
 
+export type CoverageStatus = "WORKED" | "OPEN" | "NO_SHOW";
+
+export interface ShiftCoverageSlot {
+  scheduleId: number;
+  guardId: number;
+  guardName: string;
+  shiftDate: string;
+  shiftType: string;
+  startTime: string | null;
+  endTime: string | null;
+  status: CoverageStatus;
+  // null when status === "NO_SHOW"
+  shiftId: number | null;
+  clockInAt: string | null;
+  clockOutAt: string | null;
+  clockOutSource: ClockOutSource | null;
+}
+
 export interface AuditVerificationResponse {
   valid: boolean;
   firstBrokenId: number | null;

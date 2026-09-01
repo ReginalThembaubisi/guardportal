@@ -13,6 +13,7 @@ import PatrolStatusPage from "./pages/PatrolStatusPage";
 import CreateGuardPage from "./pages/CreateGuardPage";
 import ShiftSchedulePage from "./pages/ShiftSchedulePage";
 import ShiftListPage from "./pages/ShiftListPage";
+import ShiftCoveragePage from "./pages/ShiftCoveragePage";
 import VehicleHistoryPage from "./pages/VehicleHistoryPage";
 import IncidentsPage from "./pages/IncidentsPage";
 import VisitorHistoryPage from "./pages/VisitorHistoryPage";
@@ -128,6 +129,14 @@ export default function App() {
         element={
           <ProtectedRoute role={["SUPERVISOR", "PROPERTY_MANAGER", "ADMIN"]}>
             <ShiftListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/shifts/coverage"
+        element={
+          <ProtectedRoute role={["SUPERVISOR", "PROPERTY_MANAGER", "ADMIN"]}>
+            <ShiftCoveragePage />
           </ProtectedRoute>
         }
       />
