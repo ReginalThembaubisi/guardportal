@@ -45,4 +45,18 @@ public interface VisitorEntryRepository extends JpaRepository<VisitorEntry, Long
     @Query("select ve from VisitorEntry ve left join fetch ve.vehicle left join fetch ve.unit where ve.property.id = :propertyId and ve.enteredAt >= :from and ve.enteredAt < :to order by ve.enteredAt desc")
     List<VisitorEntry> findAllByProperty_IdAndEnteredAtBetween(
             @Param("propertyId") Long propertyId, @Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
+    // Evidence pack: visitor entries processed by a specific guard within a
+    // shift window. No direct shift FK on visitor_entry — matched by guard ID
+    // and enteredAt in [clockInAt, clockOutAt). Pass to=null for open shifts
+    // (the JPQL :to is null condition handles the open-ended upper bound).
+    @Query("select ve from VisitorEntry ve left join fetch ve.unit left join fetch ve.invitation " +
+           "where ve.processedByGuard.id = :guardId " +
+           "and ve.enteredAt >= :from " +
+           "and (:to is null or ve.enteredAt < :to) " +
+           "order by ve.enteredAt asc")
+    List<VisitorEntry> findByGuardAndWindow(
+            @Param("guardId") Long guardId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to);
 }

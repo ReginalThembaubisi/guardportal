@@ -34,6 +34,7 @@ import java.util.List;
 public class IncidentReadController {
 
     private final IncidentService incidentService;
+    private final EvidencePackService evidencePackService;
 
     @GetMapping
     public List<IncidentResponse> listByProperty(Authentication authentication, @RequestParam Long propertyId) {
@@ -56,6 +57,23 @@ public class IncidentReadController {
         Long callerUserId = (Long) authentication.getPrincipal();
         Incident incident = incidentService.updateStatus(callerUserId, id, request.status());
         return IncidentResponse.from(incident, incidentService.mediaFor(incident.getId()));
+    }
+
+    /**
+     * Generates a PDF evidence pack for the incident and returns it as an attachment.
+     * SUPERVISOR is intentionally excluded — the method-level annotation overrides the
+     * class-level one. Only PROPERTY_MANAGER (scoped to their own property) and ADMIN.
+     */
+    @GetMapping("/{incidentId}/evidence-pack")
+    @PreAuthorize("hasAnyRole('PROPERTY_MANAGER', 'ADMIN')")
+    public ResponseEntity<byte[]> evidencePack(Authentication authentication, @PathVariable Long incidentId) {
+        Long callerUserId = (Long) authentication.getPrincipal();
+        byte[] pdf = evidencePackService.generatePack(callerUserId, incidentId);
+        String filename = "evidence-pack-incident-" + incidentId + ".pdf";
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .body(pdf);
     }
 
     /** Serves a photo's raw bytes — never as static content, always through this scoped, authenticated path. */

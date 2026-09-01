@@ -65,6 +65,24 @@ export default function IncidentsPage() {
     loadIncidents();
   }, [loadIncidents]);
 
+  async function downloadEvidencePack(incidentId: number) {
+    if (!auth) return;
+    setError(null);
+    try {
+      const url = await apiFetchBlob(`/api/v1/incidents/${incidentId}/evidence-pack`, auth.token);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `evidence-pack-incident-${incidentId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Revoke after a delay so the browser has time to start the download.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to download evidence pack");
+    }
+  }
+
   async function changeStatus(incidentId: number, status: IncidentStatus) {
     if (!auth) return;
     setError(null);
@@ -142,6 +160,15 @@ export default function IncidentsPage() {
                   ))}
                 </select>
               </label>
+
+              {(hasRole("PROPERTY_MANAGER") || hasRole("ADMIN")) && (
+                <button
+                  className="btn-evidence-pack"
+                  onClick={() => downloadEvidencePack(incident.id)}
+                >
+                  Download evidence pack
+                </button>
+              )}
             </div>
           ))}
         </div>
