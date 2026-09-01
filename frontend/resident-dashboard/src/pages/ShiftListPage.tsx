@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch, ApiError } from "../api/client";
 import type { PropertyManagerResponse, PropertyResponse, PropertySupervisorResponse, ShiftSummaryResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import Seal from "../components/Seal";
 import Layout from "../components/Layout";
+
+type ShiftFilter = "ALL" | "FLAGGED" | "LATE_CLOCKOUT" | "AUTO_CLOSED";
 
 function fmtDatetime(isoStr: string): string {
   const d = new Date(isoStr);
@@ -32,7 +34,28 @@ export default function ShiftListPage() {
   const [propertyId, setPropertyId] = useState<number | null>(null);
   const [propertyOptions, setPropertyOptions] = useState<{ id: number; name: string }[] | null>(null);
   const [shifts, setShifts] = useState<ShiftSummaryResponse[] | null>(null);
+  const [activeFilter, setActiveFilter] = useState<ShiftFilter>("ALL");
   const [error, setError] = useState<string | null>(null);
+
+  const counts = useMemo(() => {
+    const all = shifts ?? [];
+    return {
+      ALL: all.length,
+      FLAGGED: all.filter((s) => s.clockOutSource !== null).length,
+      LATE_CLOCKOUT: all.filter((s) => s.clockOutSource === "CLIENT_CLAIMED_LATE").length,
+      AUTO_CLOSED: all.filter((s) => s.clockOutSource === "ROSTER_AUTO_CLOSED").length,
+    };
+  }, [shifts]);
+
+  const displayedShifts = useMemo(() => {
+    if (!shifts) return null;
+    switch (activeFilter) {
+      case "FLAGGED":       return shifts.filter((s) => s.clockOutSource !== null);
+      case "LATE_CLOCKOUT": return shifts.filter((s) => s.clockOutSource === "CLIENT_CLAIMED_LATE");
+      case "AUTO_CLOSED":   return shifts.filter((s) => s.clockOutSource === "ROSTER_AUTO_CLOSED");
+      default:              return shifts;
+    }
+  }, [shifts, activeFilter]);
 
   useEffect(() => {
     if (!auth) return;
@@ -83,15 +106,36 @@ export default function ShiftListPage() {
 
       {propertyOptions && propertyOptions.length > 0 && (
         <>
-          <h2>Recent shifts ({shifts?.length ?? "…"})</h2>
+          <div className="tabs">
+            {(["ALL", "FLAGGED", "LATE_CLOCKOUT", "AUTO_CLOSED"] as ShiftFilter[]).map((f) => {
+              const labels: Record<ShiftFilter, string> = {
+                ALL: "All",
+                FLAGGED: "Flagged",
+                LATE_CLOCKOUT: "Late clock-out",
+                AUTO_CLOSED: "Auto-closed",
+              };
+              const n = shifts !== null ? counts[f] : null;
+              return (
+                <button
+                  key={f}
+                  className={`tab${activeFilter === f ? " active" : ""}`}
+                  onClick={() => setActiveFilter(f)}
+                >
+                  {labels[f]}{n !== null ? ` (${n})` : ""}
+                </button>
+              );
+            })}
+          </div>
 
-          {shifts && shifts.length === 0 && (
-            <p className="empty">No shifts recorded for this property yet.</p>
+          {displayedShifts && displayedShifts.length === 0 && (
+            <p className="empty">
+              {activeFilter === "ALL" ? "No shifts recorded for this property yet." : "No shifts match this filter."}
+            </p>
           )}
 
-          {shifts && shifts.length > 0 && (
+          {displayedShifts && displayedShifts.length > 0 && (
             <div className="shift-list">
-              {shifts.map((s) => {
+              {displayedShifts.map((s) => {
                 const isOpen = s.clockOutAt === null;
                 const isAutoClose = s.clockOutSource === "ROSTER_AUTO_CLOSED";
                 const isLate = s.clockOutSource === "CLIENT_CLAIMED_LATE";

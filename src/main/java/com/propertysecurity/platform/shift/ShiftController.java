@@ -63,9 +63,11 @@ public class ShiftController {
      */
     @GetMapping
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'PROPERTY_MANAGER', 'ADMIN')")
-    public List<ShiftSummaryResponse> listForProperty(Authentication authentication, @RequestParam Long propertyId) {
+    public List<ShiftSummaryResponse> listForProperty(Authentication authentication,
+                                                      @RequestParam Long propertyId,
+                                                      @RequestParam(defaultValue = "ALL") ShiftFlag flag) {
         Long callerUserId = (Long) authentication.getPrincipal();
-        return shiftService.listForProperty(callerUserId, propertyId);
+        return shiftService.listForProperty(callerUserId, propertyId, flag);
     }
 
     /**
