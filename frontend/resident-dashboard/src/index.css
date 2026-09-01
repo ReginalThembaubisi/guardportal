@@ -1335,6 +1335,7 @@ form button[type="submit"]:disabled {
 .coverage-slot-guard  { font-weight: 600; font-size: 14px; }
 .coverage-slot-sched  { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .coverage-slot-actual { font-size: 13px; margin-top: 3px; }
+.coverage-slot-noshow-label { color: var(--flag); font-weight: 600; }
 .coverage-slot-badge  {
   display: inline-block;
   margin-left: 8px;

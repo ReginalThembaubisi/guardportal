@@ -301,33 +301,57 @@ public class ShiftService {
 
     // ── Coverage report ───────────────────────────────────────────────────────
 
+    // Acceptance window for matching a clock-in to a schedule slot.
+    // A guard on an 18:00 night shift who clocks in at 00:30 the next day still
+    // falls within 12 hours of the rostered start — using calendar date alone
+    // would produce a false NO_SHOW.  The 1-hour early buffer covers guards who
+    // arrive just before the rostered start.  When startTime is null the window
+    // falls back to the full calendar day.
+    private static final int COVERAGE_WINDOW_HOURS_BEFORE = 1;
+    private static final int COVERAGE_WINDOW_HOURS_AFTER = 12;
+
     @Transactional(readOnly = true)
     public List<ShiftCoverageSlot> coverageForProperty(Long callerUserId, Long propertyId, LocalDate from, LocalDate to) {
         assertCanAccessProperty(callerUserId, propertyId);
 
         List<ShiftSchedule> schedules = shiftScheduleRepository.findByPropertyAndDateRange(propertyId, from, to);
 
-        // Index actual shifts by (guardId, shiftDate derived from clockInAt).
-        LocalDateTime windowStart = from.atStartOfDay();
-        LocalDateTime windowEnd = to.plusDays(1).atStartOfDay();
-        Map<String, Shift> shiftIndex = new java.util.HashMap<>();
-        for (Shift s : shiftRepository.findByPropertyAndClockInRange(propertyId, windowStart, windowEnd)) {
-            String key = s.getGuard().getId() + ":" + s.getClockInAt().toLocalDate();
-            // Keep the most recent clock-in if more than one falls on the same date.
-            shiftIndex.merge(key, s, (existing, incoming) ->
-                    incoming.getClockInAt().isAfter(existing.getClockInAt()) ? incoming : existing);
-        }
+        // Fetch a wider-than-requested shift window so night-shift clock-ins that
+        // cross midnight into (to + 1) are still available for per-slot matching.
+        LocalDateTime fetchFrom = from.atStartOfDay().minusHours(COVERAGE_WINDOW_HOURS_BEFORE);
+        LocalDateTime fetchTo = to.plusDays(1).atStartOfDay().plusHours(COVERAGE_WINDOW_HOURS_AFTER);
+        List<Shift> shifts = shiftRepository.findByPropertyAndClockInRange(propertyId, fetchFrom, fetchTo);
 
         List<ShiftCoverageSlot> result = new ArrayList<>(schedules.size());
         for (ShiftSchedule schedule : schedules) {
-            String key = schedule.getGuard().getId() + ":" + schedule.getShiftDate();
-            Shift shift = shiftIndex.get(key);
-            if (shift == null) {
-                result.add(ShiftCoverageSlot.noShow(schedule));
-            } else if (shift.getClockOutAt() == null) {
-                result.add(ShiftCoverageSlot.open(schedule, shift));
+            // Per-slot acceptance window anchored on the rostered start time.
+            LocalDateTime slotStart;
+            LocalDateTime slotEnd;
+            if (schedule.getStartTime() != null) {
+                LocalDateTime rostered = schedule.getShiftDate().atTime(schedule.getStartTime());
+                slotStart = rostered.minusHours(COVERAGE_WINDOW_HOURS_BEFORE);
+                slotEnd   = rostered.plusHours(COVERAGE_WINDOW_HOURS_AFTER);
             } else {
-                result.add(ShiftCoverageSlot.worked(schedule, shift));
+                slotStart = schedule.getShiftDate().atStartOfDay();
+                slotEnd   = schedule.getShiftDate().plusDays(1).atStartOfDay();
+            }
+
+            // Scan for the best matching shift: same guard, clock-in within window.
+            // Latest clock-in wins in the rare case of a re-clock-in after an erroneous auto-close.
+            Shift best = null;
+            for (Shift s : shifts) {
+                if (!s.getGuard().getId().equals(schedule.getGuard().getId())) continue;
+                LocalDateTime ci = s.getClockInAt();
+                if (ci.isBefore(slotStart) || !ci.isBefore(slotEnd)) continue;
+                if (best == null || ci.isAfter(best.getClockInAt())) best = s;
+            }
+
+            if (best == null) {
+                result.add(ShiftCoverageSlot.noShow(schedule));
+            } else if (best.getClockOutAt() == null) {
+                result.add(ShiftCoverageSlot.open(schedule, best));
+            } else {
+                result.add(ShiftCoverageSlot.worked(schedule, best));
             }
         }
         return result;

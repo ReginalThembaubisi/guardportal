@@ -139,7 +139,7 @@ export default function ShiftCoveragePage() {
                   <span className="coverage-day-summary">
                     {worked > 0 && <span className="cov-count cov-worked">{worked} worked</span>}
                     {open > 0 && <span className="cov-count cov-open">{open} open</span>}
-                    {noShow > 0 && <span className="cov-count cov-noshow">{noShow} no-show</span>}
+                    {noShow > 0 && <span className="cov-count cov-noshow">{noShow} no clock-in</span>}
                   </span>
                 </div>
                 {daySlots.map((slot) => (
@@ -165,6 +165,9 @@ export default function ShiftCoveragePage() {
                     )}
                     {slot.status === "OPEN" && slot.clockInAt && (
                       <div className="coverage-slot-actual">In {fmtTime(slot.clockInAt)} · still open</div>
+                    )}
+                    {slot.status === "NO_SHOW" && (
+                      <div className="coverage-slot-actual coverage-slot-noshow-label">No clock-in</div>
                     )}
                   </div>
                 ))}
