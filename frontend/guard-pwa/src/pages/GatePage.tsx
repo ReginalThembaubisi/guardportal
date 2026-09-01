@@ -10,9 +10,11 @@ import type {
   VisitorHistoryEntryResponse,
 } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { useOfflineQueue } from "../OfflineQueueContext";
 import Layout from "../components/Layout";
 import QrScanner from "../components/QrScanner";
 import Seal from "../components/Seal";
+import { toLocalDateTimeParam } from "../patrol";
 import { VehicleHistoryContent } from "./VehicleHistoryPage";
 
 type Segment = "checkin" | "onsite" | "vehicles";
@@ -97,6 +99,7 @@ function formatCode(code: string): string {
  */
 export default function GatePage() {
   const { auth, setPropertyId } = useAuth();
+  const { enqueueAction } = useOfflineQueue();
   const [searchParams] = useSearchParams();
   const initialSegment = (searchParams.get("segment") as Segment | null) ?? "checkin";
   const [segment, setSegment] = useState<Segment>(initialSegment);
@@ -114,6 +117,8 @@ export default function GatePage() {
   const [checkInError, setCheckInError] = useState<string | null>(null);
   const [checkInBusy, setCheckInBusy] = useState(false);
   const [lastCheckIn, setLastCheckIn] = useState<VisitorCheckInResponse | null>(null);
+  /** Set when a check-in is offline-queued (not yet confirmed by the server). */
+  const [queuedCode, setQueuedCode] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
   const loadOccupancy = useCallback(() => {
@@ -158,25 +163,57 @@ export default function GatePage() {
     setCheckInError(null);
     setOutcome(null);
     setCheckInBusy(true);
-    try {
-      const body =
-        viaShortCode && USE_SHORT_CODE_FIELD
-          ? { shortCode: trimmed, vehicleRegistration: vehicleRegistration.trim() || undefined }
-          : { qrToken: trimmed, vehicleRegistration: vehicleRegistration.trim() || undefined };
+    const idempotencyKey = crypto.randomUUID();
+    const claimedAt = new Date().toISOString();
+    // Hoisted outside try so the catch block can reference it when queuing.
+    const body: Record<string, string | undefined> =
+      viaShortCode && USE_SHORT_CODE_FIELD
+        ? { shortCode: trimmed, vehicleRegistration: vehicleRegistration.trim() || undefined }
+        : { qrToken: trimmed, vehicleRegistration: vehicleRegistration.trim() || undefined };
 
+    try {
       const entry = await apiFetch<VisitorCheckInResponse>("/api/v1/visitor-entries", {
         method: "POST",
         token: auth.token,
         body,
+        idempotencyKey,
       });
       setLastCheckIn(entry);
       setPropertyId(entry.propertyId);
       setDigits("");
       setVehicleRegistration("");
       setScanning(false);
+      setQueuedCode(null);
       loadOccupancy();
     } catch (err) {
-      if (viaShortCode) {
+      if (err instanceof TypeError) {
+        // Offline — queue the check-in with the same idempotency key so a
+        // server-side race (request got through but response didn't) is
+        // replayed rather than re-submitted.
+        try {
+          await enqueueAction({
+            id: idempotencyKey,
+            type: "VISITOR_CHECK_IN",
+            path: "/api/v1/visitor-entries",
+            body: { ...body, clientClaimedAt: toLocalDateTimeParam(new Date(claimedAt)) },
+            clientClaimedAt: claimedAt,
+          });
+          setQueuedCode(viaShortCode ? formatCode(trimmed) : "QR code");
+          setDigits("");
+          setVehicleRegistration("");
+          setScanning(false);
+        } catch (qErr) {
+          // IDB failure — hard error. Keep the code/digits on screen so the
+          // guard can re-read and try again. Use checkInError for both paths
+          // to avoid the slot-rejection colouring (which signals a bad code,
+          // not a storage problem).
+          const msg =
+            qErr instanceof DOMException && qErr.name === "QuotaExceededError"
+              ? "Storage full — check-in not saved. Note the visitor's code and try again when connected."
+              : "No connection and local save failed — check-in not saved. Note the code below.";
+          setCheckInError(msg);
+        }
+      } else if (viaShortCode) {
         // Keep the digits on screen so the guard can re-read them against
         // what the visitor is holding, rather than having the code cleared
         // out from under them.
@@ -212,6 +249,7 @@ export default function GatePage() {
 
   function nextCode() {
     setLastCheckIn(null);
+    setQueuedCode(null);
     setOutcome(null);
     setDigits("");
   }
@@ -368,6 +406,23 @@ export default function GatePage() {
                       the record that actually counts (principle #2). */}
                   <p className="checkin-provenance">
                     Server-stamped {new Date(lastCheckIn.enteredAt).toLocaleTimeString()}
+                  </p>
+                </div>
+
+                <button type="button" className="next-code-button" onClick={nextCode}>
+                  Next code
+                </button>
+              </>
+            ) : queuedCode ? (
+              <>
+                {/* Not a confirmed check-in — sealed only when the server confirms.
+                    The guard processed the visitor; the record is pending sync. */}
+                <div className="checkin-result queued-result">
+                  <h2>Entry queued</h2>
+                  <p className="checkin-visitor-name">{queuedCode}</p>
+                  <p className="entry-meta">No connection — saved on this phone.</p>
+                  <p className="checkin-provenance">
+                    Will submit automatically when connected · <Link to="/queue" style={{ color: "inherit" }}>View outbox</Link>
                   </p>
                 </div>
 

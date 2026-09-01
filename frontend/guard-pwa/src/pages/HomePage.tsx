@@ -115,17 +115,18 @@ export default function HomePage() {
     setBusy(true);
     const claimedAt = new Date().toISOString();
     try {
-      const coords = await getCurrentCoordinates();
       const idempotencyKey = crypto.randomUUID();
+      const coords = await getCurrentCoordinates();
+      const clockOutBody = {
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        clientClaimedAt: toLocalDateTimeParam(new Date(claimedAt)),
+      };
       try {
         await apiFetch<ShiftResponse>("/api/v1/shifts/clock-out", {
           method: "POST",
           token: auth.token,
-          body: {
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-            clientClaimedAt: toLocalDateTimeParam(new Date(claimedAt)),
-          },
+          body: clockOutBody,
           idempotencyKey,
         });
         setOpenShift(null);
@@ -138,16 +139,14 @@ export default function HomePage() {
             setError(err.message);
           }
         } else {
-          // Network error — queue the clock-out
+          // Network error — queue with the same key so a server-side race is
+          // replayed correctly rather than retried as a fresh duplicate.
           try {
             await enqueueAction({
+              id: idempotencyKey,
               type: "CLOCK_OUT",
               path: "/api/v1/shifts/clock-out",
-              body: {
-                latitude: coords.latitude,
-                longitude: coords.longitude,
-                clientClaimedAt: toLocalDateTimeParam(new Date(claimedAt)),
-              },
+              body: clockOutBody,
               clientClaimedAt: claimedAt,
             });
           } catch (qErr) {

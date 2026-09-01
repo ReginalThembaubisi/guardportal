@@ -70,12 +70,12 @@ function getDB(): Promise<IDBDatabase> {
 }
 
 export async function enqueue(
-  entry: Omit<QueueEntry, "id" | "enqueuedAt" | "status" | "attemptCount">,
+  entry: Omit<QueueEntry, "enqueuedAt" | "status" | "attemptCount"> & { id?: string },
 ): Promise<void> {
   const db = await getDB();
   const full: QueueEntry = {
     ...entry,
-    id: crypto.randomUUID(),
+    id: entry.id ?? crypto.randomUUID(),
     enqueuedAt: new Date().toISOString(),
     status: "pending",
     attemptCount: 0,

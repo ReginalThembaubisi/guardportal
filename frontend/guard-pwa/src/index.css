@@ -2089,3 +2089,15 @@ form button[type="submit"]:disabled {
 .secondary-action-inline:hover {
   background: var(--accent-tint);
 }
+
+/* Queued result card — shown after a successful offline enqueue.
+   Distinct from the green "Checked in" card: flag-tint border signals
+   "pending, not confirmed" without implying failure. */
+.queued-result {
+  background: var(--flag-tint);
+  border-color: var(--flag);
+}
+
+.queued-result h2 {
+  color: var(--flag);
+}

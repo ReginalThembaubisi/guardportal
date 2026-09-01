@@ -28,6 +28,7 @@ interface OfflineQueueContextValue {
   pendingClockOut: QueueEntry | null;
   rejectedClockOut: QueueEntry | null;
   enqueueAction: (entry: {
+    id?: string;
     type: QueueEntryType;
     path: string;
     body: Record<string, unknown>;
@@ -112,6 +113,10 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
 
   const enqueueAction = useCallback(
     async (entry: {
+      /** When provided, this UUID is used as the IDB entry's id AND the Idempotency-Key header
+       *  on flush — thread the same key through the failed online attempt so a race-condition
+       *  replay (server already processed it) is correctly identified rather than re-submitted. */
+      id?: string;
       type: QueueEntryType;
       path: string;
       body: Record<string, unknown>;
@@ -119,6 +124,7 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
     }) => {
       // Let QuotaExceededError and other IDB errors propagate — callers must handle them.
       await idbEnqueue({
+        id: entry.id,
         type: entry.type,
         endpoint: `POST ${entry.path}`,
         path: entry.path,

@@ -60,7 +60,14 @@ export default function ReportPage() {
       setSeverity("MEDIUM");
       setPhotos([]);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Failed to report incident");
+      if (err instanceof TypeError) {
+        // Incident reports cannot be queued offline (photos are not serializable
+        // to IndexedDB JSON). The form data is preserved below — the guard can
+        // try again when connected, or note the details manually.
+        setError("No connection — incident not submitted. Your description is preserved in the form. Try again when connected.");
+      } else {
+        setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Failed to report incident");
+      }
     } finally {
       setBusy(false);
     }

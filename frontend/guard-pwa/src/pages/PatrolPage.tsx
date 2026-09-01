@@ -1,13 +1,16 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { apiFetch, ApiError } from "../api/client";
 import type { CheckpointResponse, CheckpointScanResponse, ShiftScheduleResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
+import { useOfflineQueue } from "../OfflineQueueContext";
 import Layout from "../components/Layout";
 import { getCurrentCoordinates } from "../geo";
-import { usePatrolStatus } from "../patrol";
+import { usePatrolStatus, toLocalDateTimeParam } from "../patrol";
 
 export default function PatrolPage() {
   const { auth } = useAuth();
+  const { enqueueAction } = useOfflineQueue();
   const [todayShift, setTodayShift] = useState<ShiftScheduleResponse | null>(null);
   const [checkpoints, setCheckpoints] = useState<CheckpointResponse[] | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -15,6 +18,7 @@ export default function PatrolPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [lastScan, setLastScan] = useState<CheckpointScanResponse | null>(null);
+  const [scanQueued, setScanQueued] = useState<string | null>(null);
 
   const patrol = usePatrolStatus(todayShift);
   const openShift = auth?.openShift ?? null;
@@ -39,19 +43,59 @@ export default function PatrolPage() {
   async function checkInAt(checkpointId: number) {
     if (!auth || busy) return;
     setError(null);
+    setScanQueued(null);
     setBusy(true);
+    const claimedAt = new Date().toISOString();
+    const idempotencyKey = crypto.randomUUID();
+    let coords: { latitude: number; longitude: number };
     try {
-      const coords = await getCurrentCoordinates();
+      coords = await getCurrentCoordinates();
+    } catch (geoErr) {
+      setError(geoErr instanceof Error ? geoErr.message : "Could not get your location");
+      setBusy(false);
+      return;
+    }
+    const scanBody = {
+      checkpointId,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      clientClaimedAt: toLocalDateTimeParam(new Date(claimedAt)),
+    };
+    try {
       const scan = await apiFetch<CheckpointScanResponse>("/api/v1/checkpoint-scans", {
         method: "POST",
         token: auth.token,
-        body: { checkpointId, latitude: coords.latitude, longitude: coords.longitude },
+        body: scanBody,
+        idempotencyKey,
       });
       setLastScan(scan);
+      setScanQueued(null);
       setPickerOpen(false);
       patrol.refresh();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Check-in failed");
+      if (err instanceof TypeError) {
+        // Offline — queue with the same key for correct replay on retry.
+        const checkpointName = checkpoints?.find((c) => c.id === checkpointId)?.name ?? String(checkpointId);
+        try {
+          await enqueueAction({
+            id: idempotencyKey,
+            type: "CHECKPOINT_SCAN",
+            path: "/api/v1/checkpoint-scans",
+            body: scanBody as unknown as Record<string, unknown>,
+            clientClaimedAt: claimedAt,
+          });
+          setScanQueued(checkpointName);
+          setPickerOpen(false);
+        } catch (qErr) {
+          const msg =
+            qErr instanceof DOMException && qErr.name === "QuotaExceededError"
+              ? `Storage full — scan not saved. Note that you visited ${checkpointName} at ${new Date(claimedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}.`
+              : `No connection and local save failed — scan not saved. Note: ${checkpointName} at ${new Date(claimedAt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}.`;
+          setError(msg);
+        }
+      } else {
+        setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : "Check-in failed");
+      }
     } finally {
       setBusy(false);
     }
@@ -150,6 +194,17 @@ export default function PatrolPage() {
             <h2>Checked in</h2>
             <p className="checkin-visitor-name">{lastScan.checkpointName}</p>
             <p className="entry-meta">{new Date(lastScan.scannedAt).toLocaleTimeString()}</p>
+          </div>
+        )}
+
+        {scanQueued && (
+          <div className="checkin-result queued-result">
+            <h2>Scan queued</h2>
+            <p className="checkin-visitor-name">{scanQueued}</p>
+            <p className="entry-meta">No connection — saved on this phone.</p>
+            <p className="checkin-provenance">
+              Will record when connected · <Link to="/queue" style={{ color: "inherit" }}>View outbox</Link>
+            </p>
           </div>
         )}
 
